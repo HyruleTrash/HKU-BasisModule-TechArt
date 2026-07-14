@@ -2,8 +2,18 @@ Shader "Custom/VolumeDiffiringShader"
 {
     Properties
     {
+        [Header(Base visual minus 1)]
         [MainColor] _BaseColor("Base Color", Color) = (1, 1, 1, 1)
         [MainTexture] _BaseMap("Base Map", 2D) = "white" {}
+        [Header(Base visual 0)]
+        [MainColor] _BaseColor0("Base Color", Color) = (1, 1, 1, 1)
+        [MainTexture] _BaseMap0("Base Map", 2D) = "white" {}
+        [Header(Base visual 1)]
+        [MainColor] _BaseColor1("Base Color", Color) = (1, 1, 1, 1)
+        [MainTexture] _BaseMap1("Base Map", 2D) = "white" {}
+        [Header(Base visual 2)]
+        [MainColor] _BaseColor2("Base Color", Color) = (1, 1, 1, 1)
+        [MainTexture] _BaseMap2("Base Map", 2D) = "white" {}
     }
 
     SubShader
@@ -19,6 +29,15 @@ Shader "Custom/VolumeDiffiringShader"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+            struct VolumeData
+            {
+                float4x4 worldToLocal;
+                float4 minBounds;
+                float4 maxBounds;
+                float id;
+                float3 padding;
+            };
+            
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -33,17 +52,20 @@ Shader "Custom/VolumeDiffiringShader"
             };
 
             TEXTURE2D(_BaseMap);
+            TEXTURE2D(_BaseMap0);
+            TEXTURE2D(_BaseMap1);
+            TEXTURE2D(_BaseMap2);
             SAMPLER(sampler_BaseMap);
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
+                half4 _BaseColor0;
+                half4 _BaseColor1;
+                half4 _BaseColor2;
                 float4 _BaseMap_ST;
             CBUFFER_END
             
-            float4x4 _VolumeWorldToLocalMatrices[8];
-            float _VolumeIDs[8];
-            float4 _VolumeMins[8];
-            float4 _VolumeMaxs[8];
+            StructuredBuffer<VolumeData> _Volumes;
             int _VolumeCount;
             
             Varyings vert(Attributes IN)
@@ -57,29 +79,29 @@ Shader "Custom/VolumeDiffiringShader"
 
             half4 frag(Varyings IN) : SV_Target
             {
-                half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv) * _BaseColor;
-                
-                float volumeID = -1.0;
+                float volume_id = -1.0;
                 
                 for (int i = 0; i < _VolumeCount; i++)
                 {
-                    // Convert fragment's world space coordinate into volume's local space, to account for rotation
-                    float4 localPos = mul(_VolumeWorldToLocalMatrices[i], float4(IN.positionWS, 1.0));
+                    VolumeData vol = _Volumes[i];
+                    float4 localPos = mul(vol.worldToLocal, float4(IN.positionWS, 1.0));
 
                     // Check if fragment is within bounds
-                    if (localPos.x >= _VolumeMins[i].x && localPos.x <= _VolumeMaxs[i].x &&
-                        localPos.y >= _VolumeMins[i].y && localPos.y <= _VolumeMaxs[i].y &&
-                        localPos.z >= _VolumeMins[i].z && localPos.z <= _VolumeMaxs[i].z)
+                    if (localPos.x >= vol.minBounds.x && localPos.x <= vol.maxBounds.x &&
+                        localPos.y >= vol.minBounds.y && localPos.y <= vol.maxBounds.y &&
+                        localPos.z >= vol.minBounds.z && localPos.z <= vol.maxBounds.z)
                     {
-                        volumeID = _VolumeIDs[i];
+                        volume_id = vol.id;
                         break;
                     }
                 }
                 
-                if (volumeID == -1.0) return color;
+                half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv) * _BaseColor;
+                if (volume_id == -1.0) return color;
                 
-                // Example for volume 0
-                if (volumeID == 0.0) return float4(1,0,0,0);
+                if (volume_id == 0.0) color = SAMPLE_TEXTURE2D(_BaseMap0, sampler_BaseMap, IN.uv) * _BaseColor0;
+                if (volume_id == 1.0) color = SAMPLE_TEXTURE2D(_BaseMap1, sampler_BaseMap, IN.uv) * _BaseColor1;
+                if (volume_id == 2.0) color = SAMPLE_TEXTURE2D(_BaseMap2, sampler_BaseMap, IN.uv) * _BaseColor2;
 
                 return color;
             }

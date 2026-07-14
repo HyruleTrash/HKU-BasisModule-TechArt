@@ -19,10 +19,12 @@ public class CustomVolume : MonoBehaviour
             return;
         }
         
-        if (this.instanceRef == null)
-            CustomVolumeManager.Instance.AddVolume(this, this.desiredId);
-        else
-            this.instanceRef.Update(this.desiredId, this.transform, this.volume);
+        this.instanceRef ??= CustomVolumeManager.Instance.GetInstance(this.desiredId);
+        if (this.instanceRef == null) CustomVolumeManager.Instance.AddVolume(this, this.desiredId);
+
+        CustomVolumeManager.VolumeInstance volumeInstance = this.instanceRef;
+        if (volumeInstance != null) volumeInstance.Update(this.desiredId, this.transform, this.volume);
+        else Debug.Log("aa");
     }
     private void Start()
     {

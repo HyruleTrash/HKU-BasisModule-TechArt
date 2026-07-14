@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+[ExecuteAlways]
 public class CustomVolumeManager : MonoBehaviour
 {
-    private static readonly int VolumeWorldToLocalMatrices = Shader.PropertyToID("_VolumeWorldToLocalMatrices");
-    private static readonly int VolumeIDs = Shader.PropertyToID("_VolumeIDs");
-    private static readonly int VolumeCount = Shader.PropertyToID("_VolumeCount");
-    private static readonly int VolumeMins = Shader.PropertyToID("_VolumeMins");
-    private static readonly int VolumeMaxs = Shader.PropertyToID("_VolumeMaxs");
+    private static readonly int VolumesBufferID = Shader.PropertyToID("_Volumes");
+    private static readonly int VolumeCountID = Shader.PropertyToID("_VolumeCount");
 
     private static CustomVolumeManager instance;
     public static CustomVolumeManager Instance
@@ -23,8 +21,23 @@ public class CustomVolumeManager : MonoBehaviour
     }
 
     private readonly SortedList<float, VolumeInstance> volumes = new();
-    public int maxVolumeCount = 8;
+    
+    private float frameCount;
+    private float maxFrameCount = 16;
+    
+    private ComputeBuffer volumeBuffer;
+    private GPUVolumeData[] cpuBufferData;
 
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct GPUVolumeData
+    {
+        public Matrix4x4 worldToLocal;
+        public Vector4 minBounds;
+        public Vector4 maxBounds;
+        public float id;
+        private float pad0, pad1, pad2; // padding for allignment
+    }
+    
     public class VolumeInstance
     {
         public int Id { get; private set; }
@@ -59,17 +72,41 @@ public class CustomVolumeManager : MonoBehaviour
     }
     
     private void OnEnable()
-    {
+    {       
         if (Instance && Instance != this) Destroy(Instance);
         Instance = this;
     }
 
     private void Awake() => this.volumes.Clear();
-
-    void FixedUpdate()
+    
+    private void OnDisable() => ReleaseBuffer();
+    private void OnDestroy() => ReleaseBuffer();
+    
+    private void ReleaseBuffer()
     {
-        UpdateVolumeList();
-        UpdateShaderVariables();
+        if (this.volumeBuffer == null) return;
+        this.volumeBuffer.Release();
+        this.volumeBuffer = null;
+    }
+
+    void Update()
+    {
+        if (!Application.isPlaying)
+        {
+            UpdateVolumeList();
+            UpdateShaderVariables();
+            return;
+        }
+        
+        if (this.frameCount >= this.maxFrameCount)
+        {
+            UpdateVolumeList();
+            UpdateShaderVariables();
+            this.frameCount = 0;
+            return;
+        }
+
+        this.frameCount += Time.deltaTime;
     }
 
     private void UpdateVolumeList()
@@ -81,31 +118,39 @@ public class CustomVolumeManager : MonoBehaviour
 
     private void UpdateShaderVariables()
     {
-        int count = Mathf.Min(this.volumes.Count, this.maxVolumeCount);
-        
-        Matrix4x4[] matrices = new Matrix4x4[count];
-        float[] ids = new float[count];
-        Vector4[] minBounds = new Vector4[count];
-        Vector4[] maxBounds = new Vector4[count];
-
-        int indexCount = 0;
-        foreach (KeyValuePair<float, VolumeInstance> pair in this.volumes)
+        int count = this.volumes.Count;
+        if (count == 0)
         {
-            if (indexCount >= this.maxVolumeCount) break;
-            if (pair.Value == null) continue;
-            matrices[indexCount] = pair.Value.Transform.worldToLocalMatrix;
-            ids[indexCount] = pair.Value.Id;
-            minBounds[indexCount] = pair.Value.Bounds.min;
-            maxBounds[indexCount] = pair.Value.Bounds.max;
-            indexCount++;
+            Shader.SetGlobalInt(VolumeCountID, 0);
+            return;
         }
         
-        // Set global array data
-        Shader.SetGlobalMatrixArray(VolumeWorldToLocalMatrices, matrices);
-        Shader.SetGlobalFloatArray(VolumeIDs, ids);
-        Shader.SetGlobalVectorArray(VolumeMins, minBounds);
-        Shader.SetGlobalVectorArray(VolumeMaxs, maxBounds);
-        Shader.SetGlobalInt(VolumeCount, count);
+        if (this.volumeBuffer == null || this.volumeBuffer.count != count)
+        {
+            ReleaseBuffer();
+            this.volumeBuffer = new ComputeBuffer(count, System.Runtime.InteropServices.Marshal.SizeOf<GPUVolumeData>());
+            this.cpuBufferData = new GPUVolumeData[count];
+        }
+
+        int index = 0;
+        foreach (KeyValuePair<float, VolumeInstance> pair in this.volumes)
+        {
+            if (pair.Value == null) continue;
+
+            this.cpuBufferData[index] = new GPUVolumeData
+            {
+                worldToLocal = pair.Value.Transform.worldToLocalMatrix,
+                minBounds = pair.Value.Bounds.min,
+                maxBounds = pair.Value.Bounds.max,
+                id = pair.Value.Id
+            };
+            index++;
+        }
+        this.volumeBuffer.SetData(this.cpuBufferData);
+        
+        // Set global shader data
+        Shader.SetGlobalBuffer(VolumesBufferID, this.volumeBuffer);
+        Shader.SetGlobalInt(VolumeCountID, count);
     }
 
     public void AddVolume(CustomVolume volume, int desiredId)
@@ -119,15 +164,20 @@ public class CustomVolumeManager : MonoBehaviour
     }
     private void AddVolume(VolumeInstance volume) => this.volumes.Add(Vector3.Distance(volume.Transform.position, this.transform.position), volume);
     
-    public void RemoveVolume(VolumeInstance volume) => this.volumes.RemoveAt(this.volumes.IndexOfValue(volume));
-    
+    public void RemoveVolume(VolumeInstance volume)
+    {
+        int i = this.volumes.IndexOfValue(volume);
+        if (i < 0) return;
+        this.volumes.RemoveAt(i);
+    }
+
     private bool ContainsId(int id) => this.volumes.FirstOrDefault(a => a.Value.Id == id).Value != null;
 
     private bool CheckIdValid(int id)
     {
         if (ContainsId(id))
         {
-            Debug.Log("Duplicate ID: " + id);
+            // Debug.Log("Duplicate ID: " + id);
             return false;
         }
 
@@ -138,5 +188,11 @@ public class CustomVolumeManager : MonoBehaviour
         }
         
         return true;
+    }
+
+    public VolumeInstance GetInstance(int desiredId)
+    {
+        VolumeInstance foundInstance = this.volumes.FirstOrDefault(a => a.Value.Id == desiredId).Value;
+        return foundInstance;
     }
 }
