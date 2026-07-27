@@ -69,7 +69,6 @@ MonoBehaviour:
   m_Name: ToonRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::ToonRenderFeature
   m_Active: 1
-  toonMat: {fileID: 2100000, guid: 66d4c156766b146b7baa4a870a2fe9a7, type: 2}
 --- !u!114 &7833122117494664109
 MonoBehaviour:
   m_ObjectHideFlags: 0

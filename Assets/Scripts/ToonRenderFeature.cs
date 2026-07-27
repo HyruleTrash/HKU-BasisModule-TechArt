@@ -1,10 +1,14 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 public class ToonRenderFeature : ScriptableRendererFeature
 {
     private Material toonMat;
     private ToonRenderPass toonRenderPass;
+    
+    private RTHandle colorCountTextureHandle;
+    public RenderTexture ColorCountTexture => this.colorCountTextureHandle?.rt;
 
     /// <summary>
     /// Runs:
@@ -20,6 +24,24 @@ public class ToonRenderFeature : ScriptableRendererFeature
         };
 
         this.toonMat = new Material(Shader.Find("ToonPostProcess"));
+        ReallocateDebugTexture();
+    }
+    
+    private void ReallocateDebugTexture()
+    {
+        if (this.colorCountTextureHandle != null) return;
+
+        this.colorCountTextureHandle = RTHandles.Alloc(
+            width: 256,
+            height: 256,
+            slices: 256,
+            colorFormat: UnityEngine.Experimental.Rendering.GraphicsFormat.R32_UInt,
+            dimension: TextureDimension.Tex3D,
+            enableRandomWrite: true,
+            useMipMap: false,
+            autoGenerateMips: false,
+            name: "ColorCountResult_Persistent"
+        );
     }
 
     // every frame, once for each camera. Don’t create or instantiate any resources within this method.
@@ -30,7 +52,7 @@ public class ToonRenderFeature : ScriptableRendererFeature
             Debug.LogWarning(this.name + " material is null and will be skipped.");
             return;
         }
-        this.toonRenderPass.Setup(this.toonMat);
+        this.toonRenderPass.Setup(this.toonMat, this.colorCountTextureHandle);
         
         if (renderingData.cameraData.cameraType == CameraType.Game)
             renderer.EnqueuePass(this.toonRenderPass);
@@ -40,6 +62,8 @@ public class ToonRenderFeature : ScriptableRendererFeature
     protected override void Dispose(bool disposing)
     {
         DestroyImmediate(this.toonMat);
+        this.colorCountTextureHandle?.Release();
+        this.colorCountTextureHandle = null;
         base.Dispose(disposing);
     }
 }
