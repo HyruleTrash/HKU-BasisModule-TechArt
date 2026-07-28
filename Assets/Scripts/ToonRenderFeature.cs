@@ -8,7 +8,6 @@ public class ToonRenderFeature : ScriptableRendererFeature
     private ToonRenderPass toonRenderPass;
     
     private RTHandle colorCountTextureHandle;
-    public RenderTexture ColorCountTexture => this.colorCountTextureHandle?.rt;
 
     /// <summary>
     /// Runs:
@@ -24,10 +23,10 @@ public class ToonRenderFeature : ScriptableRendererFeature
         };
 
         this.toonMat = new Material(Shader.Find("ToonPostProcess"));
-        ReallocateDebugTexture();
+        ReallocateColorCountTexture();
     }
     
-    private void ReallocateDebugTexture()
+    private void ReallocateColorCountTexture()
     {
         if (this.colorCountTextureHandle != null) return;
 

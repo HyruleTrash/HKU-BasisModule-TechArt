@@ -17,6 +17,8 @@ public class ToonRenderPass : ScriptableRenderPass
     private int kernelIndexClearResult;
     
     private RTHandle colorCountTextureHandle;
+    
+    private static readonly int ColorCountTextureID = Shader.PropertyToID("_ColorCountTexture");
 
     public void Setup(Material newToonMaterial, RTHandle newColorCountTextureHandle)
     {
@@ -28,6 +30,11 @@ public class ToonRenderPass : ScriptableRenderPass
         if (!this.textureColorCountComputeShader) return;
         this.kernelIndexCount = this.textureColorCountComputeShader.FindKernel("count");
         this.kernelIndexClearResult = this.textureColorCountComputeShader.FindKernel("clear_result");
+        
+        Shader.SetGlobalTexture(
+            ColorCountTextureID,
+            this.colorCountTextureHandle
+        );
     }
     
     private class TexCountComputePassData
@@ -128,7 +135,7 @@ public class ToonRenderPass : ScriptableRenderPass
     
     private void ApplyToonShader(RenderGraph renderGraph, TextureHandle source, TextureHandle destination)
     {
-        using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass<ToonBlitPassData>(ToonPassName, out ToonBlitPassData passData);
+        using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(ToonPassName, out ToonBlitPassData passData);
         passData.material = this.toonMaterial;
         passData.source = source;
 

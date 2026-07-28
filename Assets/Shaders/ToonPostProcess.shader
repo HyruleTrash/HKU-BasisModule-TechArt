@@ -22,7 +22,8 @@
                float2 uv = input.texcoord.xy;
                half4 color = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearRepeat, uv, _BlitMipLevel);
                
-               return half4(_SinTime.x, 0, _SinTime.x * -1, 1) * color;
+               // return half4(_SinTime.x * -1, 0, _SinTime.x * 1, 1) * color;
+               return color;
            }
 
            ENDHLSL

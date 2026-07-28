@@ -15,9 +15,17 @@ void count (uint3 id : SV_DispatchThreadID)
     if (id.x >= width || id.y >= height) return;
     
     float4 color = source.Load(int3(id.xy, 0));
-    uint3 color255 = (uint3)round(saturate(color.rgb) * 255.0f);
+    uint3 color255 = (uint3)round(color.rgb * 255.0f);
     
     InterlockedAdd(result[color255.xyz], 1);
+    
+    // uint width, height;
+    // source.GetDimensions(width, height);
+    //
+    // if (id.x >= width || id.y >= height)
+    //     return;
+    //
+    // InterlockedAdd(result[uint3(0, 0, 255)], 1);
 }
 
 [numthreads(8, 8, 8)]
