@@ -13,45 +13,57 @@ public class ToonRenderPass : ScriptableRenderPass
     private Material toonMaterial;
     
     private ComputeShader textureColorCountComputeShader;
-    private int kernelIndexCount;
-    private int kernelIndexClearResult;
+    private int kICountMethod; // KI stands for kernelIndex
+    private int kIClearResultMethodTextureCount;
+    
+    private ComputeShader colorPalletComputeShader;
+    private int kIGrowMethod;
+    private int kICheckArgsMethod;
+    private int kICheckPalletCountMethod;
+    private int kIResetArgsMethod;
+    private int kIClearResultMethodColorPallet;
     
     private RTHandle colorCountTextureHandle;
+    private RTHandle colorPalletTextureHandle;
+    private GraphicsBuffer colorPalletDataBuffer = new(GraphicsBuffer.Target.Structured, 3, sizeof(uint));
     
     private static readonly int ColorCountTextureID = Shader.PropertyToID("color_count_texture");
+    private static readonly int ColorPalletTextureID = Shader.PropertyToID("screen_color_pallet_texture");
 
-    public void Setup(Material newToonMaterial, RTHandle newColorCountTextureHandle)
+    public void Setup(Material newToonMaterial, RTHandle newColorCountTextureHandle, RTHandle newColorPalletTextureHandle)
     {
         this.toonMaterial = newToonMaterial;
         this.colorCountTextureHandle = newColorCountTextureHandle;
+        this.colorPalletTextureHandle = newColorPalletTextureHandle;
         this.requiresIntermediateTexture = true;
         
+        LoadRequiredComponents();
+    }
+
+    private void LoadRequiredComponents()
+    {
         this.textureColorCountComputeShader = Resources.Load<ComputeShader>("TextureColorCount");
         if (!this.textureColorCountComputeShader) return;
-        this.kernelIndexCount = this.textureColorCountComputeShader.FindKernel("count");
-        this.kernelIndexClearResult = this.textureColorCountComputeShader.FindKernel("clear_result");
+        this.kICountMethod = this.textureColorCountComputeShader.FindKernel("count");
+        this.kIClearResultMethodTextureCount = this.textureColorCountComputeShader.FindKernel("clear_result");
+        
+        this.colorPalletComputeShader = Resources.Load<ComputeShader>("ColorPalletComputeShader");
+        if (!this.colorPalletComputeShader) return;
+        this.kIGrowMethod = this.colorPalletComputeShader.FindKernel("grow");
+        this.kICheckArgsMethod = this.colorPalletComputeShader.FindKernel("check_args");
+        this.kICheckPalletCountMethod = this.colorPalletComputeShader.FindKernel("check_pallet_count");
+        this.kIResetArgsMethod = this.colorPalletComputeShader.FindKernel("reset_args");
+        this.kIClearResultMethodColorPallet = this.colorPalletComputeShader.FindKernel("clear_result");
         
         Shader.SetGlobalTexture(
             ColorCountTextureID,
             this.colorCountTextureHandle
         );
-    }
-    
-    private class TexCountComputePassData
-    {
-        public ComputeShader computeShader;
-        public int kernelIndex;
-        public TextureHandle result;
-        public TextureHandle source;
-        public int threadGroupsX;
-        public int threadGroupsY;
-        public int threadGroupsZ;
-    }
-    
-    private class ToonBlitPassData
-    {
-        public Material material;
-        public TextureHandle source;
+        
+        Shader.SetGlobalTexture(
+            ColorPalletTextureID,
+            this.colorPalletTextureHandle
+        );
     }
     
     public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
@@ -63,8 +75,13 @@ public class ToonRenderPass : ScriptableRenderPass
         TextureDesc sourceDesc = renderGraph.GetTextureDesc(source);
 
         TextureHandle countResult = renderGraph.ImportTexture(this.colorCountTextureHandle);
+        TextureHandle palletResult = renderGraph.ImportTexture(this.colorPalletTextureHandle);
+        
         ClearColorCount(renderGraph, countResult);
         CountColors(renderGraph, source, countResult, sourceDesc);
+        
+        ClearPallet(renderGraph, palletResult);
+        GrowCountResultToPalletLookUp(renderGraph, countResult, palletResult);
 
         TextureDesc finalResultDesc = sourceDesc;
         finalResultDesc.name = $"CameraColor-{ToonPassName}";
@@ -74,7 +91,7 @@ public class ToonRenderPass : ScriptableRenderPass
         ApplyToonShader(renderGraph, source, finalResult);
         resourceData.cameraColor = finalResult;
     }
-    
+
     /// <returns>false when toon shader shouldnt run</returns>
     private bool AbleToRun(UniversalResourceData resourceData)
     {
@@ -92,31 +109,39 @@ public class ToonRenderPass : ScriptableRenderPass
 
         return true;
     }
+    
+    private class TexCountComputePassData
+    {
+        public ComputeShader computeShader;
+        public int kernelIndex;
+        public TextureHandle result;
+        public TextureHandle source;
+        public int threadGroupsX;
+        public int threadGroupsY;
+        public int threadGroupsZ;
+    }
 
     private void ClearColorCount(RenderGraph renderGraph, TextureHandle countResult)
     {
-        using IComputeRenderGraphBuilder builder = renderGraph.AddComputePass("Clear Toon Colors", out TexCountComputePassData passData);
+        using IComputeRenderGraphBuilder builder = renderGraph.AddComputePass("Clear color count", out TexCountComputePassData passData);
         passData.computeShader = this.textureColorCountComputeShader;
-        passData.kernelIndex = this.kernelIndexClearResult;
+        passData.kernelIndex = this.kIClearResultMethodTextureCount;
         passData.result = countResult;
-        passData.threadGroupsX = 32;
-        passData.threadGroupsY = 32;
-        passData.threadGroupsZ = 32;
             
         builder.UseTexture(countResult, AccessFlags.Write);
             
         builder.SetRenderFunc((TexCountComputePassData data, ComputeGraphContext context) =>
         {
             context.cmd.SetComputeTextureParam(data.computeShader, data.kernelIndex, "result", data.result);
-            context.cmd.DispatchCompute(data.computeShader, data.kernelIndex, data.threadGroupsX, data.threadGroupsY, data.threadGroupsZ);
+            context.cmd.DispatchCompute(data.computeShader, data.kernelIndex, 32, 32, 32); // 32 = 255 / 8 roughly
         });
     }
 
     private void CountColors(RenderGraph renderGraph, TextureHandle source, TextureHandle resultTex, TextureDesc sourceDesc)
     {
-        using IComputeRenderGraphBuilder builder = renderGraph.AddComputePass("Count Toon Colors", out TexCountComputePassData passData);
+        using IComputeRenderGraphBuilder builder = renderGraph.AddComputePass("Count screenTex Colors", out TexCountComputePassData passData);
         passData.computeShader = this.textureColorCountComputeShader;
-        passData.kernelIndex = this.kernelIndexCount;
+        passData.kernelIndex = this.kICountMethod;
         passData.source = source;
         passData.result = resultTex;
         passData.threadGroupsX = Mathf.CeilToInt(sourceDesc.width / 8.0f);
@@ -133,6 +158,77 @@ public class ToonRenderPass : ScriptableRenderPass
         });
     }
     
+    private class PalletComputePassData
+    {
+        public ComputeShader computeShader;
+        public TextureHandle valueLookup;
+        public TextureHandle colorResult;
+        public BufferHandle dataBuffer;
+    }
+    
+    private void ClearPallet(RenderGraph renderGraph, TextureHandle palletResult)
+    {
+        using IComputeRenderGraphBuilder builder = renderGraph.AddComputePass("Clear pallet Colors", out PalletComputePassData passData);
+        passData.computeShader = this.colorPalletComputeShader;
+        passData.colorResult = palletResult;
+            
+        builder.UseTexture(palletResult, AccessFlags.Write);
+            
+        builder.SetRenderFunc((PalletComputePassData data, ComputeGraphContext context) =>
+        {
+            context.cmd.SetComputeTextureParam(data.computeShader, this.kIClearResultMethodColorPallet, "color_result", data.colorResult);
+            context.cmd.DispatchCompute(data.computeShader,  this.kIClearResultMethodColorPallet, 32, 32, 32);
+        });
+    }
+    
+    private void GrowCountResultToPalletLookUp(RenderGraph renderGraph, TextureHandle countResult, TextureHandle palletResult)
+    {
+        using IComputeRenderGraphBuilder builder = renderGraph.AddComputePass("Clear pallet Colors", out PalletComputePassData passData);
+        passData.computeShader = this.colorPalletComputeShader;
+        passData.valueLookup = countResult;
+        passData.colorResult = palletResult;
+        passData.dataBuffer = renderGraph.ImportBuffer(this.colorPalletDataBuffer);
+            
+        builder.UseTexture(countResult, AccessFlags.ReadWrite);
+        builder.UseTexture(palletResult, AccessFlags.ReadWrite);
+        builder.UseBuffer(passData.dataBuffer, AccessFlags.ReadWrite);
+            
+        builder.SetRenderFunc((PalletComputePassData data, ComputeGraphContext context) =>
+        {
+            context.cmd.SetComputeIntParam(data.computeShader, "width", 256);
+            context.cmd.SetComputeIntParam(data.computeShader, "height", 256);
+            context.cmd.SetComputeIntParam(data.computeShader, "depth", 256);
+            context.cmd.SetComputeIntParam(data.computeShader, "color_limit", 32);
+
+            ConnectToKernel(this.kIResetArgsMethod, context, data);
+            ConnectToKernel(this.kIGrowMethod, context, data);
+            ConnectToKernel(this.kICheckArgsMethod, context, data);
+            ConnectToKernel(this.kICheckPalletCountMethod, context, data);
+            
+            context.cmd.DispatchCompute(data.computeShader, this.kIResetArgsMethod, 1, 1, 1);
+            for (int i = 0; i < 256; i++)
+            {
+                context.cmd.DispatchCompute(data.computeShader, this.kIGrowMethod, 32, 32, 32);
+                context.cmd.DispatchCompute(data.computeShader, this.kICheckArgsMethod, 1, 1, 1);
+                context.cmd.DispatchCompute(data.computeShader, this.kICheckPalletCountMethod, 32, 32, 32);
+            }
+        });
+        return;
+
+        void ConnectToKernel(int kernelId, ComputeGraphContext context, PalletComputePassData data)
+        {
+            context.cmd.SetComputeTextureParam(data.computeShader, kernelId, "color_result", data.colorResult);
+            context.cmd.SetComputeTextureParam(data.computeShader, kernelId, "value_lookup", data.valueLookup);
+            context.cmd.SetComputeBufferParam(data.computeShader, kernelId, "live_data", data.dataBuffer);
+        }
+    }
+
+    private class ToonBlitPassData
+    {
+        public Material material;
+        public TextureHandle source;
+    }
+    
     private void ApplyToonShader(RenderGraph renderGraph, TextureHandle source, TextureHandle destination)
     {
         using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(ToonPassName, out ToonBlitPassData passData);
@@ -142,9 +238,6 @@ public class ToonRenderPass : ScriptableRenderPass
         builder.UseTexture(source, AccessFlags.Read);
         builder.SetRenderAttachment(destination, 0, AccessFlags.Write);
 
-        builder.SetRenderFunc((ToonBlitPassData data, RasterGraphContext context) =>
-        {
-            Blitter.BlitTexture(context.cmd, data.source, new Vector4(1, 1, 0, 0), data.material, 0);
-        });
+        builder.SetRenderFunc((ToonBlitPassData data, RasterGraphContext context) => Blitter.BlitTexture(context.cmd, data.source, new Vector4(1, 1, 0, 0), data.material, 0));
     }
 }

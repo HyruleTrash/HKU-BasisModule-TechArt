@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -8,6 +9,7 @@ public class ToonRenderFeature : ScriptableRendererFeature
     private ToonRenderPass toonRenderPass;
     
     private RTHandle colorCountTextureHandle;
+    private RTHandle colorPalletTextureHandle;
 
     /// <summary>
     /// Runs:
@@ -17,29 +19,41 @@ public class ToonRenderFeature : ScriptableRendererFeature
     /// </summary>
     public override void Create()
     {
+        Dispose();
+        
         this.toonRenderPass = new ToonRenderPass
         {
             renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing // Inject the render pass after rendering the skybox
         };
-
-        this.toonMat = new Material(Shader.Find("ToonPostProcess"));
-        ReallocateColorCountTexture();
+        
+        this.toonMat = CoreUtils.CreateEngineMaterial(Shader.Find("ToonPostProcess"));
+        ReallocateTextures();
     }
     
-    private void ReallocateColorCountTexture()
+    private void ReallocateTextures()
     {
-        if (this.colorCountTextureHandle != null) return;
-
-        this.colorCountTextureHandle = RTHandles.Alloc(
+        this.colorCountTextureHandle ??= RTHandles.Alloc(
             width: 256,
             height: 256,
             slices: 256,
-            colorFormat: UnityEngine.Experimental.Rendering.GraphicsFormat.R32_UInt,
+            colorFormat: GraphicsFormat.R32_UInt,
             dimension: TextureDimension.Tex3D,
             enableRandomWrite: true,
             useMipMap: false,
             autoGenerateMips: false,
             name: "ColorCountResult_Persistent"
+        );
+        
+        this.colorPalletTextureHandle ??= RTHandles.Alloc(
+            width: 256,
+            height: 256,
+            slices: 256,
+            colorFormat: GraphicsFormat.R32G32B32A32_SFloat,
+            dimension: TextureDimension.Tex3D,
+            enableRandomWrite: true,
+            useMipMap: false,
+            autoGenerateMips: false,
+            name: "ColorPalletResult_Persistent"
         );
     }
 
@@ -51,7 +65,7 @@ public class ToonRenderFeature : ScriptableRendererFeature
             Debug.LogWarning(this.name + " material is null and will be skipped.");
             return;
         }
-        this.toonRenderPass.Setup(this.toonMat, this.colorCountTextureHandle);
+        this.toonRenderPass.Setup(this.toonMat, this.colorCountTextureHandle, this.colorPalletTextureHandle);
         
         if (renderingData.cameraData.cameraType == CameraType.Game)
             renderer.EnqueuePass(this.toonRenderPass);
@@ -60,9 +74,11 @@ public class ToonRenderFeature : ScriptableRendererFeature
     // to dispose of any resources after render feature is gone
     protected override void Dispose(bool disposing)
     {
-        DestroyImmediate(this.toonMat);
+        CoreUtils.Destroy(this.toonMat);
         this.colorCountTextureHandle?.Release();
         this.colorCountTextureHandle = null;
+        this.colorPalletTextureHandle?.Release();
+        this.colorPalletTextureHandle = null;
         base.Dispose(disposing);
     }
 }

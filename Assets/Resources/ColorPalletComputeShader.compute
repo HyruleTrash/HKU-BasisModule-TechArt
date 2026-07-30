@@ -1,0 +1,80 @@
+﻿// Generate a ColorPallet lookup from an existing texture, and value texture
+
+#pragma kernel grow
+#pragma kernel check_args
+#pragma kernel check_pallet_count
+#pragma kernel reset_args
+#pragma kernel clear_result
+
+RWTexture3D<uint> value_lookup; // read write
+RWTexture3D<float4> color_result; // read write
+RWStructuredBuffer<uint> live_data; // 0: change_count, 1: no_changes_made (bool), 2: color_limit_reached(bool)
+
+uint width, height, depth, color_limit;
+
+static const int3 neighbor_offsets[6] =
+{
+    int3(-1, 0, 0),
+    int3( 1, 0, 0),
+    int3( 0,-1, 0),
+    int3( 0, 1, 0),
+    int3( 0, 0,-1),
+    int3( 0, 0, 1),
+};
+
+[numthreads(8, 8, 8)]
+void grow(uint3 id : SV_DispatchThreadID)
+{
+    if (live_data[1] == 1 || live_data[2] == 1) return;
+    if (id.x >= width || id.y >= height || id.z >= depth) return;
+
+    uint current_value = value_lookup[id];
+    float4 new_color = color_result[id];
+    for (int i = 0; i < 6; ++i)
+    {
+        int3 pos = neighbor_offsets[i] + id;
+        if (pos.x >= width || pos.y >= height || pos.z >= depth) continue;
+        if (value_lookup[pos] > current_value)
+        {
+            new_color = color_result[pos];
+            current_value = value_lookup[pos];
+        }
+    }
+    
+    if (new_color.r == color_result[id].r && new_color.g == color_result[id].g && new_color.b == color_result[id].b) return;
+    
+    value_lookup[id] = current_value;
+    color_result[id] = new_color;
+    InterlockedAdd(live_data[0], 1);
+}
+
+[numthreads(1, 1, 1)]
+void check_args()
+{
+    live_data[1] = live_data[0] == 0;
+    live_data[0] = 0;
+}
+
+[numthreads(8, 8, 8)]
+void check_pallet_count(uint3 id : SV_DispatchThreadID)
+{
+    if (live_data[1] == 1 || live_data[2] == 1) return;
+    if (id.x >= width || id.y >= height || id.z >= depth) return;
+    
+    // counts the amount of unique colors found in color_result
+    // sets color_limit_reached to true if the amount of unique colors is less than color_limit
+}
+
+[numthreads(1, 1, 1)]
+void reset_args()
+{
+    live_data[1] = 0;
+    live_data[2] = 0;
+}
+
+[numthreads(8, 8, 8)]
+void clear_result(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= 256 || id.y >= 256 || id.z >= 256) return;
+    color_result[id] = float4(id, 1);
+}
