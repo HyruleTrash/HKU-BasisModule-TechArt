@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: temp
+  m_Name: TextureCountDiagram
   m_Shader: {fileID: 4800000, guid: c33a02eccfed4916a8b21c24724a9f2e, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -97,7 +97,7 @@ Material:
     m_Floats:
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
-    - _AlphaMultiplier: 1000
+    - _AlphaMultiplier: 8000
     - _AlphaToMask: 0
     - _Blend: 0
     - _BlendModePreserveSpecular: 1

@@ -18,7 +18,7 @@ public class ToonRenderPass : ScriptableRenderPass
     
     private RTHandle colorCountTextureHandle;
     
-    private static readonly int ColorCountTextureID = Shader.PropertyToID("_ColorCountTexture");
+    private static readonly int ColorCountTextureID = Shader.PropertyToID("color_count_texture");
 
     public void Setup(Material newToonMaterial, RTHandle newColorCountTextureHandle)
     {
