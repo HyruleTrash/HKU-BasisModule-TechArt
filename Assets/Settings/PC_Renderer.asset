@@ -69,6 +69,7 @@ MonoBehaviour:
   m_Name: ToonRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::ToonRenderFeature
   m_Active: 1
+  colorLimit: 16
 --- !u!114 &7833122117494664109
 MonoBehaviour:
   m_ObjectHideFlags: 0

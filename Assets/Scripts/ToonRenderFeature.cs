@@ -10,6 +10,9 @@ public class ToonRenderFeature : ScriptableRendererFeature
     
     private RTHandle colorCountTextureHandle;
     private RTHandle colorPalletTextureHandle;
+    
+    [SerializeField, Range(2, 255)]
+    private int colorLimit;
 
     /// <summary>
     /// Runs:
@@ -65,10 +68,9 @@ public class ToonRenderFeature : ScriptableRendererFeature
             Debug.LogWarning(this.name + " material is null and will be skipped.");
             return;
         }
-        this.toonRenderPass.Setup(this.toonMat, this.colorCountTextureHandle, this.colorPalletTextureHandle);
+        this.toonRenderPass.Setup(this.toonMat, this.colorCountTextureHandle, this.colorPalletTextureHandle, this.colorLimit);
         
-        if (renderingData.cameraData.cameraType == CameraType.Game)
-            renderer.EnqueuePass(this.toonRenderPass);
+        if (renderingData.cameraData.cameraType == CameraType.Game) renderer.EnqueuePass(this.toonRenderPass);
     }
 
     // to dispose of any resources after render feature is gone
@@ -79,6 +81,7 @@ public class ToonRenderFeature : ScriptableRendererFeature
         this.colorCountTextureHandle = null;
         this.colorPalletTextureHandle?.Release();
         this.colorPalletTextureHandle = null;
+        this.toonRenderPass?.Dispose();
         base.Dispose(disposing);
     }
 }

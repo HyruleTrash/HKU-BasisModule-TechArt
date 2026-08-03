@@ -2,15 +2,18 @@
 
 #pragma kernel grow
 #pragma kernel check_args
-#pragma kernel check_pallet_count
 #pragma kernel reset_args
 #pragma kernel clear_result
+#pragma kernel clear_unique_colors
+#pragma kernel mark_unique_colors
+#pragma kernel sum_unique_colors
 
 RWTexture3D<uint> value_lookup; // read write
 RWTexture3D<float4> color_result; // read write
-RWStructuredBuffer<uint> live_data; // 0: change_count, 1: no_changes_made (bool), 2: color_limit_reached(bool)
+RWStructuredBuffer<uint> live_data; // 0: change_count, 1: no_changes_made (bool), 2: color_limit_reached(bool), 3 is unique color count
+RWStructuredBuffer<uint> unique_colors_bitmask; // represents count per color
 
-uint width, height, depth, color_limit;
+uint width, height, depth, color_limit, step_size;
 
 static const int3 neighbor_offsets[6] =
 {
@@ -23,17 +26,35 @@ static const int3 neighbor_offsets[6] =
 };
 
 [numthreads(8, 8, 8)]
-void grow(uint3 id : SV_DispatchThreadID)
+void grow(uint3 id : SV_DispatchThreadID) // jump-fill algorithm
 {
-    if (live_data[1] == 1 || live_data[2] == 1) return;
+    if (live_data[1] == 1) return;
     if (id.x >= width || id.y >= height || id.z >= depth) return;
 
     uint current_value = value_lookup[id];
     float4 new_color = color_result[id];
+    bool is_empty = (new_color.a == 0.0);
+    
     for (int i = 0; i < 6; ++i)
     {
-        int3 pos = neighbor_offsets[i] + id;
+        uint3 pos = (neighbor_offsets[i] * step_size) + id;
         if (pos.x >= width || pos.y >= height || pos.z >= depth) continue;
+        
+        // If this voxel is empty, it MUST grab any available neighbor
+        if (is_empty)
+        {
+            if (color_result[pos].a > 0.0)
+            {
+                new_color = color_result[pos];
+                current_value = value_lookup[pos];
+                is_empty = false;
+            }
+            continue;
+        }
+        
+        // If color limit is reached, stop merging/reducing existing palette colors
+        if (live_data[2] == 1) continue;
+            
         if (value_lookup[pos] > current_value)
         {
             new_color = color_result[pos];
@@ -41,7 +62,8 @@ void grow(uint3 id : SV_DispatchThreadID)
         }
     }
     
-    if (new_color.r == color_result[id].r && new_color.g == color_result[id].g && new_color.b == color_result[id].b) return;
+    if (new_color.a == 0.0) return; // empty voxels shouldn't grow
+    if (!is_empty && (new_color.r == color_result[id].r && new_color.g == color_result[id].g && new_color.b == color_result[id].b)) return;
     
     value_lookup[id] = current_value;
     color_result[id] = new_color;
@@ -51,18 +73,51 @@ void grow(uint3 id : SV_DispatchThreadID)
 [numthreads(1, 1, 1)]
 void check_args()
 {
+    if (live_data[3] <= color_limit)
+    {
+        live_data[2] = 1;
+    }
     live_data[1] = live_data[0] == 0;
     live_data[0] = 0;
 }
 
+[numthreads(64, 1, 1)]
+void clear_unique_colors(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= 524288) return;
+    unique_colors_bitmask[id.x] = 0;
+    if (id.x == 0) live_data[3] = 0; 
+}
+
 [numthreads(8, 8, 8)]
-void check_pallet_count(uint3 id : SV_DispatchThreadID)
+void mark_unique_colors(uint3 id : SV_DispatchThreadID)
 {
     if (live_data[1] == 1 || live_data[2] == 1) return;
     if (id.x >= width || id.y >= height || id.z >= depth) return;
     
-    // counts the amount of unique colors found in color_result
-    // sets color_limit_reached to true if the amount of unique colors is less than color_limit
+    float4 color = color_result[id];
+    if (color.a == 0.0) return;
+    
+    uint flat_id = (uint)color.x | ((uint)color.y << 8) | ((uint)color.z << 16);
+    
+    uint index = flat_id / 32;
+    uint bit = 1 << (flat_id % 32);
+    
+    InterlockedOr(unique_colors_bitmask[index], bit);
+}
+
+[numthreads(64, 1, 1)]
+void sum_unique_colors(uint3 id : SV_DispatchThreadID)
+{
+    if (live_data[1] == 1 || live_data[2] == 1) return;
+    if (id.x >= 524288) return;
+    
+    uint bits = countbits(unique_colors_bitmask[id.x]);
+    
+    if (bits > 0)
+    {
+        InterlockedAdd(live_data[3], bits);
+    }
 }
 
 [numthreads(1, 1, 1)]
@@ -76,5 +131,13 @@ void reset_args()
 void clear_result(uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= 256 || id.y >= 256 || id.z >= 256) return;
-    color_result[id] = float4(id, 1);
+    
+    if (value_lookup[id] > 0)
+    {
+        color_result[id] = float4(id, 1.0); // 1.0 alpha marks a valid seed
+    }
+    else
+    {
+        color_result[id] = float4(-1, -1, -1, 0.0); // 0.0 alpha marks empty space
+    }
 }
