@@ -12,8 +12,10 @@ public class ToonRenderFeature : ScriptableRendererFeature
     private RTHandle colorPalletTextureHandle;
     
     [SerializeField, Range(2, 255)]
-    private int colorLimit;
-
+    private int colorLimit = 16;
+    [SerializeField, Range(2, 255), Tooltip("should be in steps, exponential from 2 to 255. 1 *= 2")]
+    private int maxFloodStep = 128;
+    
     /// <summary>
     /// Runs:
     /// When the Scriptable Renderer Feature loads the first time.
@@ -23,6 +25,9 @@ public class ToonRenderFeature : ScriptableRendererFeature
     public override void Create()
     {
         Dispose();
+
+        this.maxFloodStep = Mathf.ClosestPowerOfTwo(this.maxFloodStep);
+        this.maxFloodStep = Mathf.Clamp(this.maxFloodStep, 2, 255);
         
         this.toonRenderPass = new ToonRenderPass
         {
@@ -68,7 +73,7 @@ public class ToonRenderFeature : ScriptableRendererFeature
             Debug.LogWarning(this.name + " material is null and will be skipped.");
             return;
         }
-        this.toonRenderPass.Setup(this.toonMat, this.colorCountTextureHandle, this.colorPalletTextureHandle, this.colorLimit);
+        this.toonRenderPass.Setup(this.toonMat, this.colorCountTextureHandle, this.colorPalletTextureHandle, this.colorLimit, this.maxFloodStep);
         
         if (renderingData.cameraData.cameraType == CameraType.Game) renderer.EnqueuePass(this.toonRenderPass);
     }

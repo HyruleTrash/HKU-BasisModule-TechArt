@@ -31,7 +31,6 @@ void grow(uint3 id : SV_DispatchThreadID) // jump-fill algorithm
     if (live_data[1] == 1) return;
     if (id.x >= width || id.y >= height || id.z >= depth) return;
 
-    uint current_value = value_lookup[id];
     float4 new_color = color_result[id];
     bool is_empty = (new_color.a == 0.0);
     
@@ -46,7 +45,6 @@ void grow(uint3 id : SV_DispatchThreadID) // jump-fill algorithm
             if (color_result[pos].a > 0.0)
             {
                 new_color = color_result[pos];
-                current_value = value_lookup[pos];
                 is_empty = false;
             }
             continue;
@@ -55,17 +53,16 @@ void grow(uint3 id : SV_DispatchThreadID) // jump-fill algorithm
         // If color limit is reached, stop merging/reducing existing palette colors
         if (live_data[2] == 1) continue;
             
-        if (value_lookup[pos] > current_value)
+        // Fair spatial JFA merging: allow neighboring clusters to merge without frequency bias
+        if (color_result[pos].a > 0.0 && (color_result[pos].r != new_color.r || color_result[pos].g != new_color.g || color_result[pos].b != new_color.b))
         {
             new_color = color_result[pos];
-            current_value = value_lookup[pos];
         }
     }
     
     if (new_color.a == 0.0) return; // empty voxels shouldn't grow
     if (!is_empty && (new_color.r == color_result[id].r && new_color.g == color_result[id].g && new_color.b == color_result[id].b)) return;
     
-    value_lookup[id] = current_value;
     color_result[id] = new_color;
     InterlockedAdd(live_data[0], 1);
 }

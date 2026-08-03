@@ -30,17 +30,19 @@ public class ToonRenderPass : ScriptableRenderPass
     private GraphicsBuffer colorPalletDataBuffer = new(GraphicsBuffer.Target.Structured, 4, sizeof(uint));
     private GraphicsBuffer bitmaskBuffer = new(GraphicsBuffer.Target.Structured, 524288, sizeof(uint)); // 255 ^ 255 ^ 255 bit count
     private int colorLimit;
+    private int maxFloodStep;
 
     private static readonly int ColorCountTextureID = Shader.PropertyToID("color_count_texture");
     private static readonly int ColorPalletTextureID = Shader.PropertyToID("screen_color_pallet_texture");
 
-    public void Setup(Material newToonMaterial, RTHandle newColorCountTextureHandle, RTHandle newColorPalletTextureHandle, int newColorLimit)
+    public void Setup(Material newToonMaterial, RTHandle newColorCountTextureHandle, RTHandle newColorPalletTextureHandle, int newColorLimit, int newMaxFloodStep)
     {
         this.toonMaterial = newToonMaterial;
         this.colorCountTextureHandle = newColorCountTextureHandle;
         this.colorPalletTextureHandle = newColorPalletTextureHandle;
         this.requiresIntermediateTexture = true;
         this.colorLimit = newColorLimit;
+        this.maxFloodStep = newMaxFloodStep;
         
         LoadRequiredComponents();
     }
@@ -171,7 +173,8 @@ public class ToonRenderPass : ScriptableRenderPass
         public TextureHandle valueLookup;
         public TextureHandle colorResult;
         public BufferHandle dataBuffer;
-        public int colorLimit;
+        public int colorLimit = 16;
+        public int maxFloodStep = 128;
     }
     
     private void ClearPallet(RenderGraph renderGraph, TextureHandle countResult, TextureHandle palletResult)
@@ -200,6 +203,7 @@ public class ToonRenderPass : ScriptableRenderPass
         passData.colorResult = palletResult;
         passData.dataBuffer = renderGraph.ImportBuffer(this.colorPalletDataBuffer);
         passData.colorLimit = this.colorLimit;
+        passData.maxFloodStep = this.maxFloodStep;
             
         builder.UseTexture(countResult, AccessFlags.ReadWrite);
         builder.UseTexture(palletResult, AccessFlags.ReadWrite);
@@ -230,7 +234,7 @@ public class ToonRenderPass : ScriptableRenderPass
             
             context.cmd.DispatchCompute(data.computeShader, this.kIResetArgsMethod, 1, 1, 1);
 
-            for (int step = 1; step < 128; step += 2)
+            for (int step = 1; step < passData.maxFloodStep; step *= 2)
             {
                 context.cmd.SetComputeIntParam(data.computeShader, "step_size", step);
                 context.cmd.DispatchCompute(data.computeShader, this.kIGrowMethod, 32, 32, 32);
