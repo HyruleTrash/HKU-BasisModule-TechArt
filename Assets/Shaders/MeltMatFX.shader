@@ -3,7 +3,7 @@ Shader "Custom/MeltMatFX"
     Properties
     {
         [MainColor] base_color("Base Color", Color) = (1, 1, 1, 1)
-        [MainTexture] base_map("Base Map", 2D) = "white" {}
+        [MainTexture] object_snapshot("Object Snapshot", 2D) = "white" {}
         
         [HideInInspector] bounds_center("Bounds Center", Vector) = (0, 0, 0, 0)
         [HideInInspector] bounds_extents("Bounds Extents", Vector) = (0.5, 0.5, 0.5, 0)
@@ -11,7 +11,7 @@ Shader "Custom/MeltMatFX"
 
     SubShader
     {
-        Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" }
+        Tags { "RenderType" = "TransparentCutout" "Queue" = "AlphaTest" "RenderPipeline" = "UniversalPipeline" }
 
         Pass
         {
@@ -25,21 +25,21 @@ Shader "Custom/MeltMatFX"
             struct attributes
             {
                 float4 position_os : POSITION;
-                float2 uv : TEXCOORD0;
+                float2 uv : TEXCOORD0; // Added UVs back to attributes
             };
 
             struct varyings
             {
                 float4 position_hcs : SV_POSITION;
-                float2 uv : TEXCOORD0;
+                float2 uv : TEXCOORD0; // Pass local UVs to fragment shader
             };
 
-            TEXTURE2D(base_map);
-            SAMPLER(sampler_base_map);
+            TEXTURE2D(object_snapshot);
+            SAMPLER(sampler_object_snapshot);
 
             CBUFFER_START(UnityPerMaterial)
                 half4 base_color;
-                float4 base_map_ST;
+                float4 object_snapshot_ST;
                 float4 bounds_center;
                 float4 bounds_extents;
             CBUFFER_END
@@ -48,60 +48,36 @@ Shader "Custom/MeltMatFX"
             {
                 varyings OUT;
 
-                float3 center = bounds_center.xyz;
-                float3 extents = bounds_extents.xyz;
+                float local_radius = length(bounds_extents.xyz);
 
-                // 1. Define the 8 corners of the original mesh's local bounding box
-                float3 corners[8];
-                corners[0] = center + float3(-extents.x, -extents.y, -extents.z);
-                corners[1] = center + float3( extents.x, -extents.y, -extents.z);
-                corners[2] = center + float3(-extents.x,  extents.y, -extents.z);
-                corners[3] = center + float3( extents.x,  extents.y, -extents.z);
-                corners[4] = center + float3(-extents.x, -extents.y,  extents.z);
-                corners[5] = center + float3( extents.x, -extents.y,  extents.z);
-                corners[6] = center + float3(-extents.x,  extents.y,  extents.z);
-                corners[7] = center + float3( extents.x,  extents.y,  extents.z);
+                float scale_x = length(float3(UNITY_MATRIX_M._m00, UNITY_MATRIX_M._m10, UNITY_MATRIX_M._m20));
+                float scale_y = length(float3(UNITY_MATRIX_M._m01, UNITY_MATRIX_M._m11, UNITY_MATRIX_M._m21));
+                float scale_z = length(float3(UNITY_MATRIX_M._m02, UNITY_MATRIX_M._m12, UNITY_MATRIX_M._m22));
+                float max_scale = max(scale_x, max(scale_y, scale_z));
 
-                // 2. Transform all 8 corners into View Space to find the 2D min/max footprint
-                float min_x = 999999.0;
-                float max_x = -999999.0;
-                float min_y = 999999.0;
-                float max_y = -999999.0;
+                float3 center_ws = TransformObjectToWorld(bounds_center.xyz);
+                float3 center_vs = TransformWorldToView(center_ws);
+                
+                // Billboard vertex offset
+                float2 offset = IN.position_os.xy * (local_radius * max_scale * 2.2);
+                float3 view_pos = center_vs + float3(offset, 0.0);
 
-                for(int i = 0; i < 8; i++)
-                {
-                    float3 world_pos = TransformObjectToWorld(corners[i]);
-                    float3 view_pos = TransformWorldToView(world_pos);
-
-                    min_x = min(min_x, view_pos.x);
-                    max_x = max(max_x, view_pos.x);
-                    min_y = min(min_y, view_pos.y);
-                    max_y = max(max_y, view_pos.y);
-                }
-
-                // 3. Anchor the billboard depth to the center of the original object
-                float3 center_world = TransformObjectToWorld(center);
-                float3 center_view = TransformWorldToView(center_world);
-                float target_z = center_view.z;
-
-                // 4. Map the Quad's standard bounds (-0.5 to 0.5) to a 0.0 to 1.0 range
-                float2 normalized_quad_pos = IN.position_os.xy + 0.5;
-
-                // 5. Stretch the Quad's vertices exactly to the View-Space bounding box
-                float final_x = lerp(min_x, max_x, normalized_quad_pos.x);
-                float final_y = lerp(min_y, max_y, normalized_quad_pos.y);
-                float3 final_view_pos = float3(final_x, final_y, target_z);
-
-                // 6. Transform direct from View Space to Clip Space
-                OUT.position_hcs = mul(UNITY_MATRIX_P, float4(final_view_pos, 1.0));
-                OUT.uv = TRANSFORM_TEX(IN.uv, base_map);
+                OUT.position_hcs = mul(UNITY_MATRIX_P, float4(view_pos, 1.0));
+                
+                // Pass standard Quad UVs through
+                OUT.uv = TRANSFORM_TEX(IN.uv, object_snapshot);
 
                 return OUT;
             }
 
             half4 frag(varyings IN) : SV_Target
             {
-                half4 color = SAMPLE_TEXTURE2D(base_map, sampler_base_map, IN.uv) * base_color;
+                // Sample using the Quad's local UVs so the texture is glued to the 3D billboard surface
+                half4 color = SAMPLE_TEXTURE2D(object_snapshot, sampler_object_snapshot, IN.uv) * base_color;
+                
+                // Discard empty transparent background pixels around the object
+                clip(color.a - 0.01);
+                
                 return color;
             }
             ENDHLSL

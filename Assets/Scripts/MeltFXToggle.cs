@@ -57,9 +57,13 @@ public class MeltFXToggle : MonoBehaviour
 
     private void Awake()
     {
-        if (!this.rendererComp || (this.originalMaterials != null && this.originalMaterials.Count != 0)) return;
-        this.originalMaterials = new List<Material>();
-        this.rendererComp.GetSharedMaterials(this.originalMaterials);
+        if (this.rendererComp && (this.originalMaterials == null || this.originalMaterials.Count == 0))
+        {
+            this.originalMaterials = new List<Material>();
+            this.rendererComp.GetSharedMaterials(this.originalMaterials);
+        }
+
+        if (this.meshFilterComp && !this.originalMesh) this.originalMesh = this.meshFilterComp.sharedMesh;
         
         if (!quadMesh)
         {
@@ -71,7 +75,7 @@ public class MeltFXToggle : MonoBehaviour
         InitCaptureCam();
     }
 
-    private void InitCaptureCam()
+    private static void InitCaptureCam()
     {
         if (captureCamObj) return;
         captureCamObj = new GameObject("TempCaptureCam");
@@ -96,8 +100,8 @@ public class MeltFXToggle : MonoBehaviour
             this.meltMaterialRuntime.SetTexture(ObjectSnapshotPropId, this.objectSnapshot);
             this.meltMaterialRuntime.SetVector(BoundsCenter, this.meshFilterComp.sharedMesh.bounds.center);
             this.meltMaterialRuntime.SetVector(BoundsExtents, this.meshFilterComp.sharedMesh.bounds.extents);
-            this.rendererComp.material = this.meltMaterialRuntime;
             
+            this.rendererComp.material = this.meltMaterialRuntime;
             this.meshFilterComp.sharedMesh = quadMesh;
         }
         else
