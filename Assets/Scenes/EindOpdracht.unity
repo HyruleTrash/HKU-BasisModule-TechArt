@@ -458,7 +458,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4d39d4609b4a53c4497c4326db99e7b3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 382726931}
   m_SourcePrefab: {fileID: 100100000, guid: 4d39d4609b4a53c4497c4326db99e7b3, type: 3}
 --- !u!1 &291711714
 GameObject:
@@ -685,6 +688,40 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 357931175}
   m_CullTransparentMesh: 1
+--- !u!1 &382726927 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 4d39d4609b4a53c4497c4326db99e7b3, type: 3}
+  m_PrefabInstance: {fileID: 244858845}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &382726928 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: 4d39d4609b4a53c4497c4326db99e7b3, type: 3}
+  m_PrefabInstance: {fileID: 244858845}
+  m_PrefabAsset: {fileID: 0}
+--- !u!33 &382726929 stripped
+MeshFilter:
+  m_CorrespondingSourceObject: {fileID: -5754084199372789682, guid: 4d39d4609b4a53c4497c4326db99e7b3, type: 3}
+  m_PrefabInstance: {fileID: 244858845}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &382726931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 382726927}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd126e3df6a0a1e4aa74dd0c0d87369d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeltFXToggle
+  rendererComp: {fileID: 382726928}
+  meshFilterComp: {fileID: 382726929}
+  meltMaterial: {fileID: 2100000, guid: ea83951e753314b4cb8c2235748e51fb, type: 2}
+  isolationLayer: 31
+  originalMaterials:
+  - {fileID: 8107166122195158936, guid: 4d39d4609b4a53c4497c4326db99e7b3, type: 3}
+  originalMesh: {fileID: -189692046968453280, guid: 4d39d4609b4a53c4497c4326db99e7b3, type: 3}
 --- !u!1001 &440191323
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -752,7 +789,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5914387197251303303, guid: 9bd4f68ec663e3248be5d0b0b36f83bf, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 572820694}
   m_SourcePrefab: {fileID: 100100000, guid: 9bd4f68ec663e3248be5d0b0b36f83bf, type: 3}
 --- !u!1 &501847490
 GameObject:
@@ -878,6 +918,43 @@ MonoBehaviour:
   blendDistance: 0
   weight: 1
   sharedProfile: {fileID: 11400000, guid: ab09877e2e707104187f6f83e2f62510, type: 2}
+--- !u!1 &572820689 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5914387197251303303, guid: 9bd4f68ec663e3248be5d0b0b36f83bf, type: 3}
+  m_PrefabInstance: {fileID: 440191323}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &572820691 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5266084148202149458, guid: 9bd4f68ec663e3248be5d0b0b36f83bf, type: 3}
+  m_PrefabInstance: {fileID: 440191323}
+  m_PrefabAsset: {fileID: 0}
+--- !u!33 &572820692 stripped
+MeshFilter:
+  m_CorrespondingSourceObject: {fileID: 7993912325934899864, guid: 9bd4f68ec663e3248be5d0b0b36f83bf, type: 3}
+  m_PrefabInstance: {fileID: 440191323}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &572820694
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 572820689}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd126e3df6a0a1e4aa74dd0c0d87369d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeltFXToggle
+  rendererComp: {fileID: 572820691}
+  meshFilterComp: {fileID: 572820692}
+  meltMaterial: {fileID: 2100000, guid: ea83951e753314b4cb8c2235748e51fb, type: 2}
+  isolationLayer: 31
+  originalMaterials:
+  - {fileID: -2392515775813238511, guid: 0021df5c5552e874f8aaf11cdf37abf5, type: 3}
+  - {fileID: -2001734583846238523, guid: 0021df5c5552e874f8aaf11cdf37abf5, type: 3}
+  - {fileID: -8440863411718301524, guid: 0021df5c5552e874f8aaf11cdf37abf5, type: 3}
+  - {fileID: -4816052166576914368, guid: 0021df5c5552e874f8aaf11cdf37abf5, type: 3}
+  originalMesh: {fileID: -86504249254647672, guid: 0021df5c5552e874f8aaf11cdf37abf5, type: 3}
 --- !u!1 &635013597
 GameObject:
   m_ObjectHideFlags: 0
@@ -1020,7 +1097,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1661422688025525599, guid: f9b5d41c77863ae4c85c6a79e8c90f5a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1587776095}
   m_SourcePrefab: {fileID: 100100000, guid: f9b5d41c77863ae4c85c6a79e8c90f5a, type: 3}
 --- !u!1001 &641604523
 PrefabInstance:
@@ -1089,8 +1169,79 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 9c78a8e9cf78e4c4dae292f02f08ce7c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 730800628}
   m_SourcePrefab: {fileID: 100100000, guid: 9c78a8e9cf78e4c4dae292f02f08ce7c, type: 3}
+--- !u!1 &688565817 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 8ef7283c2ede5824c92958a643fff85e, type: 3}
+  m_PrefabInstance: {fileID: 1849311583}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &688565818 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: 8ef7283c2ede5824c92958a643fff85e, type: 3}
+  m_PrefabInstance: {fileID: 1849311583}
+  m_PrefabAsset: {fileID: 0}
+--- !u!33 &688565819 stripped
+MeshFilter:
+  m_CorrespondingSourceObject: {fileID: -5754084199372789682, guid: 8ef7283c2ede5824c92958a643fff85e, type: 3}
+  m_PrefabInstance: {fileID: 1849311583}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &688565821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 688565817}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd126e3df6a0a1e4aa74dd0c0d87369d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeltFXToggle
+  rendererComp: {fileID: 688565818}
+  meshFilterComp: {fileID: 688565819}
+  meltMaterial: {fileID: 2100000, guid: ea83951e753314b4cb8c2235748e51fb, type: 2}
+  isolationLayer: 31
+  originalMaterials:
+  - {fileID: 8107166122195158936, guid: 8ef7283c2ede5824c92958a643fff85e, type: 3}
+  originalMesh: {fileID: -7278241458972871928, guid: 8ef7283c2ede5824c92958a643fff85e, type: 3}
+--- !u!1 &730800624 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 9c78a8e9cf78e4c4dae292f02f08ce7c, type: 3}
+  m_PrefabInstance: {fileID: 641604523}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &730800625 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: 9c78a8e9cf78e4c4dae292f02f08ce7c, type: 3}
+  m_PrefabInstance: {fileID: 641604523}
+  m_PrefabAsset: {fileID: 0}
+--- !u!33 &730800626 stripped
+MeshFilter:
+  m_CorrespondingSourceObject: {fileID: -5754084199372789682, guid: 9c78a8e9cf78e4c4dae292f02f08ce7c, type: 3}
+  m_PrefabInstance: {fileID: 641604523}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &730800628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 730800624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd126e3df6a0a1e4aa74dd0c0d87369d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeltFXToggle
+  rendererComp: {fileID: 730800625}
+  meshFilterComp: {fileID: 730800626}
+  meltMaterial: {fileID: 2100000, guid: ea83951e753314b4cb8c2235748e51fb, type: 2}
+  isolationLayer: 31
+  originalMaterials:
+  - {fileID: 8107166122195158936, guid: 9c78a8e9cf78e4c4dae292f02f08ce7c, type: 3}
+  originalMesh: {fileID: 1343119477732150255, guid: 9c78a8e9cf78e4c4dae292f02f08ce7c, type: 3}
 --- !u!1 &768238240
 GameObject:
   m_ObjectHideFlags: 0
@@ -1241,6 +1392,77 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 898300982}
   m_CullTransparentMesh: 1
+--- !u!1 &924667965 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2982047259560398058, guid: a47a47d9007502b48af95584f216c8b9, type: 3}
+  m_PrefabInstance: {fileID: 1771694146}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &924667967 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3630640579213913407, guid: a47a47d9007502b48af95584f216c8b9, type: 3}
+  m_PrefabInstance: {fileID: 1771694146}
+  m_PrefabAsset: {fileID: 0}
+--- !u!33 &924667968 stripped
+MeshFilter:
+  m_CorrespondingSourceObject: {fileID: 1551022878059207157, guid: a47a47d9007502b48af95584f216c8b9, type: 3}
+  m_PrefabInstance: {fileID: 1771694146}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &924667970
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 924667965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd126e3df6a0a1e4aa74dd0c0d87369d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeltFXToggle
+  rendererComp: {fileID: 924667967}
+  meshFilterComp: {fileID: 924667968}
+  meltMaterial: {fileID: 2100000, guid: ea83951e753314b4cb8c2235748e51fb, type: 2}
+  isolationLayer: 31
+  originalMaterials:
+  - {fileID: -7287193982258931762, guid: 8c85d3167196e3148b43f65098dcdc2b, type: 3}
+  - {fileID: -4114178898665410548, guid: 8c85d3167196e3148b43f65098dcdc2b, type: 3}
+  originalMesh: {fileID: -6764971387199940967, guid: 8c85d3167196e3148b43f65098dcdc2b, type: 3}
+--- !u!1 &1016851477 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3278494795935583615, guid: 220c73c641dda514297994004ee2dbfc, type: 3}
+  m_PrefabInstance: {fileID: 1194802036}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1016851480 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3926982562871422122, guid: 220c73c641dda514297994004ee2dbfc, type: 3}
+  m_PrefabInstance: {fileID: 1194802036}
+  m_PrefabAsset: {fileID: 0}
+--- !u!33 &1016851481 stripped
+MeshFilter:
+  m_CorrespondingSourceObject: {fileID: 1268755725967579232, guid: 220c73c641dda514297994004ee2dbfc, type: 3}
+  m_PrefabInstance: {fileID: 1194802036}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1016851483
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1016851477}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd126e3df6a0a1e4aa74dd0c0d87369d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeltFXToggle
+  rendererComp: {fileID: 1016851480}
+  meshFilterComp: {fileID: 1016851481}
+  meltMaterial: {fileID: 2100000, guid: ea83951e753314b4cb8c2235748e51fb, type: 2}
+  isolationLayer: 31
+  originalMaterials:
+  - {fileID: -4272420358286439931, guid: 1ec9c8b04be76104a8967c81ced7f0d0, type: 3}
+  - {fileID: -8440863411718301524, guid: 1ec9c8b04be76104a8967c81ced7f0d0, type: 3}
+  - {fileID: -5316684210946835829, guid: 1ec9c8b04be76104a8967c81ced7f0d0, type: 3}
+  originalMesh: {fileID: -6677438710817756826, guid: 1ec9c8b04be76104a8967c81ced7f0d0, type: 3}
 --- !u!1 &1020290394
 GameObject:
   m_ObjectHideFlags: 0
@@ -1383,7 +1605,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 83c89e340cd37264fa36be1e6073eb39, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1699704265}
   m_SourcePrefab: {fileID: 100100000, guid: 83c89e340cd37264fa36be1e6073eb39, type: 3}
 --- !u!1 &1064762801
 GameObject:
@@ -1535,6 +1760,40 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1112832306}
   m_CullTransparentMesh: 1
+--- !u!1 &1114754818 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: c0983c36a5f8ea74f9ed1e5c044ab6e4, type: 3}
+  m_PrefabInstance: {fileID: 1336138899}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1114754819 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: c0983c36a5f8ea74f9ed1e5c044ab6e4, type: 3}
+  m_PrefabInstance: {fileID: 1336138899}
+  m_PrefabAsset: {fileID: 0}
+--- !u!33 &1114754820 stripped
+MeshFilter:
+  m_CorrespondingSourceObject: {fileID: -5754084199372789682, guid: c0983c36a5f8ea74f9ed1e5c044ab6e4, type: 3}
+  m_PrefabInstance: {fileID: 1336138899}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1114754822
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1114754818}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd126e3df6a0a1e4aa74dd0c0d87369d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeltFXToggle
+  rendererComp: {fileID: 1114754819}
+  meshFilterComp: {fileID: 1114754820}
+  meltMaterial: {fileID: 2100000, guid: ea83951e753314b4cb8c2235748e51fb, type: 2}
+  isolationLayer: 31
+  originalMaterials:
+  - {fileID: 8107166122195158936, guid: c0983c36a5f8ea74f9ed1e5c044ab6e4, type: 3}
+  originalMesh: {fileID: -5792787153868408567, guid: c0983c36a5f8ea74f9ed1e5c044ab6e4, type: 3}
 --- !u!1001 &1194802036
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1602,7 +1861,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3278494795935583615, guid: 220c73c641dda514297994004ee2dbfc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1016851483}
   m_SourcePrefab: {fileID: 100100000, guid: 220c73c641dda514297994004ee2dbfc, type: 3}
 --- !u!1 &1320870907
 GameObject:
@@ -1746,7 +2008,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c0983c36a5f8ea74f9ed1e5c044ab6e4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1114754822}
   m_SourcePrefab: {fileID: 100100000, guid: c0983c36a5f8ea74f9ed1e5c044ab6e4, type: 3}
 --- !u!1 &1338699165
 GameObject:
@@ -2080,6 +2345,40 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1571559988}
   m_CullTransparentMesh: 1
+--- !u!1 &1587776090 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1661422688025525599, guid: f9b5d41c77863ae4c85c6a79e8c90f5a, type: 3}
+  m_PrefabInstance: {fileID: 640697467}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1587776092 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 868758573669588106, guid: f9b5d41c77863ae4c85c6a79e8c90f5a, type: 3}
+  m_PrefabInstance: {fileID: 640697467}
+  m_PrefabAsset: {fileID: 0}
+--- !u!33 &1587776093 stripped
+MeshFilter:
+  m_CorrespondingSourceObject: {fileID: 3164486926949836864, guid: f9b5d41c77863ae4c85c6a79e8c90f5a, type: 3}
+  m_PrefabInstance: {fileID: 640697467}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1587776095
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1587776090}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd126e3df6a0a1e4aa74dd0c0d87369d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeltFXToggle
+  rendererComp: {fileID: 1587776092}
+  meshFilterComp: {fileID: 1587776093}
+  meltMaterial: {fileID: 2100000, guid: ea83951e753314b4cb8c2235748e51fb, type: 2}
+  isolationLayer: 31
+  originalMaterials:
+  - {fileID: -131431682068794773, guid: 8d358598d03269548a764062af8aa434, type: 3}
+  originalMesh: {fileID: 7413822699735797492, guid: 8d358598d03269548a764062af8aa434, type: 3}
 --- !u!1001 &1640628264
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2147,8 +2446,50 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1053716973251701709, guid: 64a53f4c90bbe964f99e41b7000490ec, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1641733896}
   m_SourcePrefab: {fileID: 100100000, guid: 64a53f4c90bbe964f99e41b7000490ec, type: 3}
+--- !u!1 &1641733891 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1053716973251701709, guid: 64a53f4c90bbe964f99e41b7000490ec, type: 3}
+  m_PrefabInstance: {fileID: 1640628264}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1641733893 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1558089826469153304, guid: 64a53f4c90bbe964f99e41b7000490ec, type: 3}
+  m_PrefabInstance: {fileID: 1640628264}
+  m_PrefabAsset: {fileID: 0}
+--- !u!33 &1641733894 stripped
+MeshFilter:
+  m_CorrespondingSourceObject: {fileID: 3637647602830868178, guid: 64a53f4c90bbe964f99e41b7000490ec, type: 3}
+  m_PrefabInstance: {fileID: 1640628264}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1641733896
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1641733891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd126e3df6a0a1e4aa74dd0c0d87369d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeltFXToggle
+  rendererComp: {fileID: 1641733893}
+  meshFilterComp: {fileID: 1641733894}
+  meltMaterial: {fileID: 2100000, guid: ea83951e753314b4cb8c2235748e51fb, type: 2}
+  isolationLayer: 31
+  originalMaterials:
+  - {fileID: -6407324466804823808, guid: c79fe32d7f116dc44888ec3f5c6689da, type: 3}
+  - {fileID: 5906189311916129639, guid: c79fe32d7f116dc44888ec3f5c6689da, type: 3}
+  - {fileID: -2392515775813238511, guid: c79fe32d7f116dc44888ec3f5c6689da, type: 3}
+  - {fileID: -2001734583846238523, guid: c79fe32d7f116dc44888ec3f5c6689da, type: 3}
+  - {fileID: -4114178898665410548, guid: c79fe32d7f116dc44888ec3f5c6689da, type: 3}
+  - {fileID: -7287193982258931762, guid: c79fe32d7f116dc44888ec3f5c6689da, type: 3}
+  originalMesh: {fileID: 6917405129564285479, guid: c79fe32d7f116dc44888ec3f5c6689da, type: 3}
 --- !u!1 &1660110878
 GameObject:
   m_ObjectHideFlags: 0
@@ -2351,6 +2692,40 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &1699704261 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 83c89e340cd37264fa36be1e6073eb39, type: 3}
+  m_PrefabInstance: {fileID: 1059872591}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1699704262 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: 83c89e340cd37264fa36be1e6073eb39, type: 3}
+  m_PrefabInstance: {fileID: 1059872591}
+  m_PrefabAsset: {fileID: 0}
+--- !u!33 &1699704263 stripped
+MeshFilter:
+  m_CorrespondingSourceObject: {fileID: -5754084199372789682, guid: 83c89e340cd37264fa36be1e6073eb39, type: 3}
+  m_PrefabInstance: {fileID: 1059872591}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1699704265
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1699704261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd126e3df6a0a1e4aa74dd0c0d87369d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeltFXToggle
+  rendererComp: {fileID: 1699704262}
+  meshFilterComp: {fileID: 1699704263}
+  meltMaterial: {fileID: 2100000, guid: ea83951e753314b4cb8c2235748e51fb, type: 2}
+  isolationLayer: 31
+  originalMaterials:
+  - {fileID: 8107166122195158936, guid: 83c89e340cd37264fa36be1e6073eb39, type: 3}
+  originalMesh: {fileID: -4242703898669362580, guid: 83c89e340cd37264fa36be1e6073eb39, type: 3}
 --- !u!1 &1758120128
 GameObject:
   m_ObjectHideFlags: 0
@@ -2475,12 +2850,14 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cd126e3df6a0a1e4aa74dd0c0d87369d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: '::'
+  m_EditorClassIdentifier: Assembly-CSharp::MeltFXToggle
   rendererComp: {fileID: 1758120130}
-  meltMaterial: {fileID: 0}
+  meshFilterComp: {fileID: 1758120131}
+  meltMaterial: {fileID: 2100000, guid: ea83951e753314b4cb8c2235748e51fb, type: 2}
+  isolationLayer: 31
   originalMaterials:
   - {fileID: 222252673}
-  isolationLayer: 31
+  originalMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &1764240481
 GameObject:
   m_ObjectHideFlags: 0
@@ -2623,7 +3000,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2982047259560398058, guid: a47a47d9007502b48af95584f216c8b9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 924667970}
   m_SourcePrefab: {fileID: 100100000, guid: a47a47d9007502b48af95584f216c8b9, type: 3}
 --- !u!1 &1805719891
 GameObject:
@@ -2810,13 +3190,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1835436745}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0, z: 0}
+  m_LocalRotation: {x: -0.012329396, y: -0, z: -0, w: 0.999924}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 40, y: 40, z: 40}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -1.413, y: 0, z: 0}
 --- !u!1001 &1849311583
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2884,7 +3264,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 8ef7283c2ede5824c92958a643fff85e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 688565821}
   m_SourcePrefab: {fileID: 100100000, guid: 8ef7283c2ede5824c92958a643fff85e, type: 3}
 --- !u!1 &1851798074
 GameObject:

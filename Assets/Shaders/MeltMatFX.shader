@@ -1,9 +1,9 @@
-Shader "Custom/MeltMatFX"
+Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
 {
     Properties
     {
         [MainColor] base_color("Base Color", Color) = (1, 1, 1, 1)
-        [MainTexture] object_snapshot("Object Snapshot", 2D) = "white" {}
+        [MainTexture] [HideInInspector] object_snapshot("Object Snapshot", 2D) = "white" {}
     }
 
     SubShader
@@ -32,7 +32,7 @@ Shader "Custom/MeltMatFX"
                 float2 uv : TEXCOORD0;
             };
 
-            TEXTURE2D(object_snapshot);
+            TEXTURE2D(object_snapshot); // snapshot of entire screen, where only the target object is visible
             SAMPLER(sampler_object_snapshot);
 
             CBUFFER_START(UnityPerMaterial)
@@ -61,6 +61,11 @@ Shader "Custom/MeltMatFX"
 
             half4 frag(varyings IN) : SV_Target
             {
+                if (IN.uv.x < 0.0 || IN.uv.x > 1.0 || IN.uv.y < 0.0 || IN.uv.y > 1.0) // dont render out of bounds
+                {
+                    discard;
+                }
+                
                 half4 color = SAMPLE_TEXTURE2D(object_snapshot, sampler_object_snapshot, IN.uv) * base_color;
                 clip(color.a - 0.01);
                 
