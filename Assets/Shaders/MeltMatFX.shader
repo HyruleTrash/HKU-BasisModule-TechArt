@@ -4,14 +4,12 @@ Shader "Custom/MeltMatFX"
     {
         [MainColor] base_color("Base Color", Color) = (1, 1, 1, 1)
         [MainTexture] object_snapshot("Object Snapshot", 2D) = "white" {}
-        
-        [HideInInspector] bounds_center("Bounds Center", Vector) = (0, 0, 0, 0)
-        [HideInInspector] bounds_extents("Bounds Extents", Vector) = (0.5, 0.5, 0.5, 0)
     }
 
     SubShader
     {
         Tags { "RenderType" = "TransparentCutout" "Queue" = "AlphaTest" "RenderPipeline" = "UniversalPipeline" }
+        Cull Off
 
         Pass
         {
@@ -25,13 +23,13 @@ Shader "Custom/MeltMatFX"
             struct attributes
             {
                 float4 position_os : POSITION;
-                float2 uv : TEXCOORD0; // Added UVs back to attributes
+                float2 uv : TEXCOORD0;
             };
 
             struct varyings
             {
                 float4 position_hcs : SV_POSITION;
-                float2 uv : TEXCOORD0; // Pass local UVs to fragment shader
+                float2 uv : TEXCOORD0;
             };
 
             TEXTURE2D(object_snapshot);
@@ -40,42 +38,36 @@ Shader "Custom/MeltMatFX"
             CBUFFER_START(UnityPerMaterial)
                 half4 base_color;
                 float4 object_snapshot_ST;
-                float4 bounds_center;
-                float4 bounds_extents;
+                float3 world_center;
+                float world_radius;
+                float4x4 capture_vp;
             CBUFFER_END
 
             varyings vert(attributes IN)
             {
                 varyings OUT;
 
-                float local_radius = length(bounds_extents.xyz);
+                // 1. Extract camera right and up vectors from the live view matrix for billboarding
+                float3 right = UNITY_MATRIX_V[0].xyz;
+                float3 up = UNITY_MATRIX_V[1].xyz;
 
-                float scale_x = length(float3(UNITY_MATRIX_M._m00, UNITY_MATRIX_M._m10, UNITY_MATRIX_M._m20));
-                float scale_y = length(float3(UNITY_MATRIX_M._m01, UNITY_MATRIX_M._m11, UNITY_MATRIX_M._m21));
-                float scale_z = length(float3(UNITY_MATRIX_M._m02, UNITY_MATRIX_M._m12, UNITY_MATRIX_M._m22));
-                float max_scale = max(scale_x, max(scale_y, scale_z));
+                // 2. Construct the billboard quad facing the camera using the scaled world radius (prevents cut-offs)
+                float3 world_pos = world_center + (IN.position_os.x * right + IN.position_os.y * up) * (world_radius * 2.0);
 
-                float3 center_ws = TransformObjectToWorld(bounds_center.xyz);
-                float3 center_vs = TransformWorldToView(center_ws);
-                
-                // Billboard vertex offset
-                float2 offset = IN.position_os.xy * (local_radius * max_scale * 2.2);
-                float3 view_pos = center_vs + float3(offset, 0.0);
+                // 3. Render position uses the current live camera clip transformation (keeps it billboarded and visible)
+                OUT.position_hcs = TransformWorldToHClip(world_pos);
 
-                OUT.position_hcs = mul(UNITY_MATRIX_P, float4(view_pos, 1.0));
-                
-                // Pass standard Quad UVs through
-                OUT.uv = TRANSFORM_TEX(IN.uv, object_snapshot);
+                // 4. UV coordinates use the FROZEN capture VP matrix mapped against the world position
+                float4 captured_cs = mul(capture_vp, float4(world_pos, 1.0));
+                float2 ndc = captured_cs.xy / captured_cs.w;
+                OUT.uv = ndc * 0.5 + 0.5;
 
                 return OUT;
             }
 
             half4 frag(varyings IN) : SV_Target
             {
-                // Sample using the Quad's local UVs so the texture is glued to the 3D billboard surface
                 half4 color = SAMPLE_TEXTURE2D(object_snapshot, sampler_object_snapshot, IN.uv) * base_color;
-                
-                // Discard empty transparent background pixels around the object
                 clip(color.a - 0.01);
                 
                 return color;

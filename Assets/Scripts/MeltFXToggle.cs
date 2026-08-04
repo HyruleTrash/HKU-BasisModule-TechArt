@@ -7,8 +7,9 @@ public class MeltFXToggle : MonoBehaviour
     private const string MeltShaderName = "Custom/MeltMatFX";
     private static Shader meltShader;
     private static readonly int ObjectSnapshotPropId = Shader.PropertyToID("object_snapshot");
-    private static readonly int BoundsCenter = Shader.PropertyToID("bounds_center");
-    private static readonly int BoundsExtents = Shader.PropertyToID("bounds_extents");
+    private static readonly int WorldCenterPropId = Shader.PropertyToID("world_center");
+    private static readonly int WorldRadiusPropId = Shader.PropertyToID("world_radius");
+    private static readonly int CaptureVpPropId = Shader.PropertyToID("capture_vp");
     
     [SerializeField, HideInInspector]
     private MeshRenderer rendererComp;
@@ -97,9 +98,18 @@ public class MeltFXToggle : MonoBehaviour
             
             if (!this.meltMaterialRuntime) this.meltMaterialRuntime = new Material(this.meltMaterial);
 
+            // Calculate captured View-Projection matrix
+            Matrix4x4 captureVP = GL.GetGPUProjectionMatrix(captureCam.projectionMatrix, false) * captureCam.worldToCameraMatrix;
+
+            // Calculate fully scaled world center and bounding radius to prevent cut-offs on larger/scaled meshes
+            Bounds localBounds = this.meshFilterComp.sharedMesh.bounds;
+            Vector3 worldCenter = transform.TransformPoint(localBounds.center);
+            float worldRadius = Vector3.Scale(localBounds.extents, transform.lossyScale).magnitude;
+
             this.meltMaterialRuntime.SetTexture(ObjectSnapshotPropId, this.objectSnapshot);
-            this.meltMaterialRuntime.SetVector(BoundsCenter, this.meshFilterComp.sharedMesh.bounds.center);
-            this.meltMaterialRuntime.SetVector(BoundsExtents, this.meshFilterComp.sharedMesh.bounds.extents);
+            this.meltMaterialRuntime.SetVector(WorldCenterPropId, worldCenter);
+            this.meltMaterialRuntime.SetFloat(WorldRadiusPropId, worldRadius);
+            this.meltMaterialRuntime.SetMatrix(CaptureVpPropId, captureVP);
             
             this.rendererComp.material = this.meltMaterialRuntime;
             this.meshFilterComp.sharedMesh = quadMesh;
