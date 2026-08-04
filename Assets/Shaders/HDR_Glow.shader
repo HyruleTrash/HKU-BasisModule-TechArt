@@ -1,4 +1,4 @@
-Shader "UI/HDR_Glow_Outline"
+Shader "UI/HDR_Glow_Outline" // shader written by gemini
 {
     Properties
     {
