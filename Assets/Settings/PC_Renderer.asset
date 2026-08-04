@@ -68,8 +68,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6088cf5aa9cc5fb478729dbfd264d915, type: 3}
   m_Name: ToonRenderFeature
   m_EditorClassIdentifier: Assembly-CSharp::ToonRenderFeature
-  m_Active: 1
+  m_Active: 0
   colorLimit: 16
+  maxFloodStep: 128
 --- !u!114 &7833122117494664109
 MonoBehaviour:
   m_ObjectHideFlags: 0
