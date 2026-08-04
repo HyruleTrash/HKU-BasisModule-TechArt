@@ -39,28 +39,22 @@ Shader "Custom/MeltMatFX"
                 half4 base_color;
                 float4 object_snapshot_ST;
                 float3 world_center;
-                float world_radius;
-                float4x4 capture_vp;
+                float2 world_size;
+                float2 uv_min;
+                float2 uv_max;
             CBUFFER_END
 
             varyings vert(attributes IN)
             {
                 varyings OUT;
 
-                // 1. Extract camera right and up vectors from the live view matrix for billboarding
                 float3 right = UNITY_MATRIX_V[0].xyz;
                 float3 up = UNITY_MATRIX_V[1].xyz;
 
-                // 2. Construct the billboard quad facing the camera using the scaled world radius (prevents cut-offs)
-                float3 world_pos = world_center + (IN.position_os.x * right + IN.position_os.y * up) * (world_radius * 2.0);
+                float3 world_pos = world_center + (IN.position_os.x * right * world_size.x) + (IN.position_os.y * up * world_size.y);
 
-                // 3. Render position uses the current live camera clip transformation (keeps it billboarded and visible)
                 OUT.position_hcs = TransformWorldToHClip(world_pos);
-
-                // 4. UV coordinates use the FROZEN capture VP matrix mapped against the world position
-                float4 captured_cs = mul(capture_vp, float4(world_pos, 1.0));
-                float2 ndc = captured_cs.xy / captured_cs.w;
-                OUT.uv = ndc * 0.5 + 0.5;
+                OUT.uv = lerp(uv_min, uv_max, IN.uv);
 
                 return OUT;
             }

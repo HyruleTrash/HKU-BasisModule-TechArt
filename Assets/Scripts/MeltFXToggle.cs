@@ -8,8 +8,9 @@ public class MeltFXToggle : MonoBehaviour
     private static Shader meltShader;
     private static readonly int ObjectSnapshotPropId = Shader.PropertyToID("object_snapshot");
     private static readonly int WorldCenterPropId = Shader.PropertyToID("world_center");
-    private static readonly int WorldRadiusPropId = Shader.PropertyToID("world_radius");
-    private static readonly int CaptureVpPropId = Shader.PropertyToID("capture_vp");
+    private static readonly int WorldSizePropId = Shader.PropertyToID("world_size");
+    private static readonly int UvMinPropId = Shader.PropertyToID("uv_min");
+    private static readonly int UvMaxPropId = Shader.PropertyToID("uv_max");
     
     [SerializeField, HideInInspector]
     private MeshRenderer rendererComp;
@@ -98,18 +99,82 @@ public class MeltFXToggle : MonoBehaviour
             
             if (!this.meltMaterialRuntime) this.meltMaterialRuntime = new Material(this.meltMaterial);
 
-            // Calculate captured View-Projection matrix
-            Matrix4x4 captureVP = GL.GetGPUProjectionMatrix(captureCam.projectionMatrix, false) * captureCam.worldToCameraMatrix;
-
-            // Calculate fully scaled world center and bounding radius to prevent cut-offs on larger/scaled meshes
             Bounds localBounds = this.meshFilterComp.sharedMesh.bounds;
-            Vector3 worldCenter = transform.TransformPoint(localBounds.center);
-            float worldRadius = Vector3.Scale(localBounds.extents, transform.lossyScale).magnitude;
+            Vector3 extents = localBounds.extents;
+            Vector3 center = localBounds.center;
+            Vector3[] corners = new Vector3[8]
+            {
+                center + new Vector3(-extents.x, -extents.y, -extents.z),
+                center + new Vector3(extents.x, -extents.y, -extents.z),
+                center + new Vector3(-extents.x,  extents.y, -extents.z),
+                center + new Vector3(extents.x,  extents.y, -extents.z),
+                center + new Vector3(-extents.x, -extents.y,  extents.z),
+                center + new Vector3(extents.x, -extents.y,  extents.z),
+                center + new Vector3(-extents.x,  extents.y,  extents.z),
+                center + new Vector3(extents.x,  extents.y,  extents.z)
+            };
 
+            Matrix4x4 localToWorld = transform.localToWorldMatrix;
+            Vector3 worldCenter = localToWorld.MultiplyPoint(center);
+
+            // 1. Calculate screen-space NDC bounds and sub-region UVs
+            Matrix4x4 captureVP = GL.GetGPUProjectionMatrix(captureCam.projectionMatrix, false) * captureCam.worldToCameraMatrix;
+            Matrix4x4 captureMVP = captureVP * localToWorld;
+
+            Vector2 minNDC = new Vector2(float.MaxValue, float.MaxValue);
+            Vector2 maxNDC = new Vector2(float.MinValue, float.MinValue);
+
+            for (int i = 0; i < 8; i++)
+            {
+                Vector4 clipPos = captureMVP * new Vector4(corners[i].x, corners[i].y, corners[i].z, 1.0f);
+                if (clipPos.w > 0.0001f)
+                {
+                    Vector2 ndc = new Vector2(clipPos.x / clipPos.w, clipPos.y / clipPos.w);
+                    minNDC = Vector2.Min(minNDC, ndc);
+                    maxNDC = Vector2.Max(maxNDC, ndc);
+                }
+            }
+
+            Vector2 uvMin = (minNDC * 0.5f) + new Vector2(0.5f, 0.5f);
+            Vector2 uvMax = (maxNDC * 0.5f) + new Vector2(0.5f, 0.5f);
+
+            // 2. Fix positional offset by matching the quad center to the exact NDC bounding box center
+            Vector2 centerNDC = (minNDC + maxNDC) * 0.5f;
+            Vector4 centerClip = captureMVP * new Vector4(center.x, center.y, center.z, 1.0f);
+            Vector2 boundsCenterNDC = (centerClip.w > 0.0001f) ? new Vector2(centerClip.x / centerClip.w, centerClip.y / centerClip.w) : centerNDC;
+            Vector2 ndcOffset = centerNDC - boundsCenterNDC;
+
+            float z = -captureCam.worldToCameraMatrix.MultiplyPoint(worldCenter).z;
+            float factorY = captureCam.orthographic ? captureCam.orthographicSize : (z * Mathf.Tan(captureCam.fieldOfView * 0.5f * Mathf.Deg2Rad));
+            float factorX = factorY * captureCam.aspect;
+
+            Vector3 correctedWorldCenter = worldCenter + (ndcOffset.x * factorX) * captureCam.transform.right + (ndcOffset.y * factorY) * captureCam.transform.up;
+
+            // 3. Derive precise world size from camera distance and NDC footprint span
+            float ndcWidth = maxNDC.x - minNDC.x;
+            float ndcHeight = maxNDC.y - minNDC.y;
+
+            float worldWidth, worldHeight;
+            if (captureCam.orthographic)
+            {
+                float orthoSize = captureCam.orthographicSize;
+                worldHeight = ndcHeight * orthoSize;
+                worldWidth = ndcWidth * orthoSize * captureCam.aspect;
+            }
+            else
+            {
+                float tanFov = Mathf.Tan(captureCam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+                worldHeight = ndcHeight * z * tanFov;
+                worldWidth = ndcWidth * z * tanFov * captureCam.aspect;
+            }
+            Vector2 worldSize = new Vector2(worldWidth, worldHeight);
+
+            // 4. Apply properties to runtime material
             this.meltMaterialRuntime.SetTexture(ObjectSnapshotPropId, this.objectSnapshot);
-            this.meltMaterialRuntime.SetVector(WorldCenterPropId, worldCenter);
-            this.meltMaterialRuntime.SetFloat(WorldRadiusPropId, worldRadius);
-            this.meltMaterialRuntime.SetMatrix(CaptureVpPropId, captureVP);
+            this.meltMaterialRuntime.SetVector(WorldCenterPropId, correctedWorldCenter);
+            this.meltMaterialRuntime.SetVector(WorldSizePropId, worldSize);
+            this.meltMaterialRuntime.SetVector(UvMinPropId, uvMin);
+            this.meltMaterialRuntime.SetVector(UvMaxPropId, uvMax);
             
             this.rendererComp.material = this.meltMaterialRuntime;
             this.meshFilterComp.sharedMesh = quadMesh;
