@@ -38,8 +38,8 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
             CBUFFER_START(UnityPerMaterial)
                 half4 base_color;
                 float4 object_snapshot_ST;
-                float3 world_center;
-                float2 world_size;
+                float3 bounds_center;
+                float2 bounds_size;
                 float2 uv_min;
                 float2 uv_max;
             CBUFFER_END
@@ -48,13 +48,14 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
             {
                 varyings OUT;
 
-                float3 right = UNITY_MATRIX_V[0].xyz;
-                float3 up = UNITY_MATRIX_V[1].xyz;
+                float3 cam_right = UNITY_MATRIX_V[0].xyz;
+                float3 cam_up = UNITY_MATRIX_V[1].xyz;
 
-                float3 world_pos = world_center + (IN.position_os.x * right * world_size.x) + (IN.position_os.y * up * world_size.y);
+                // allign quad position to camera. Warning, shader breaks when mesh isn't a standard quad
+                float3 world_pos = bounds_center + (IN.position_os.x * cam_right * bounds_size.x) + (IN.position_os.y * cam_up * bounds_size.y);
 
-                OUT.position_hcs = TransformWorldToHClip(world_pos);
-                OUT.uv = lerp(uv_min, uv_max, IN.uv);
+                OUT.position_hcs = TransformWorldToHClip(world_pos); // convert world pos to screen pos
+                OUT.uv = lerp(uv_min, uv_max, IN.uv); // align to cropped bounds of object (passed texture is a screen texture)
 
                 return OUT;
             }

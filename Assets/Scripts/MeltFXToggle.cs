@@ -11,8 +11,8 @@ public class MeltFXToggle : MonoBehaviour
     private const string MeltShaderName = "Custom/MeltMatFX";
     private static Shader meltShader;
     private static readonly int ObjectSnapshotPropId = Shader.PropertyToID("object_snapshot");
-    private static readonly int WorldCenterPropId = Shader.PropertyToID("world_center");
-    private static readonly int WorldSizePropId = Shader.PropertyToID("world_size");
+    private static readonly int BoundsCenterPropId = Shader.PropertyToID("bounds_center");
+    private static readonly int BoundsSizePropId = Shader.PropertyToID("bounds_size");
     private static readonly int UvMinPropId = Shader.PropertyToID("uv_min");
     private static readonly int UvMaxPropId = Shader.PropertyToID("uv_max");
     
@@ -122,12 +122,12 @@ public class MeltFXToggle : MonoBehaviour
             
         if (!this.meltMaterialRuntime) this.meltMaterialRuntime = new Material(this.meltMaterial);
 
-        CalculateUvData(out Vector2 uvMin, out Vector2 uvMax, out Vector3 correctedWorldCenter, out Vector2 worldSize);
+        GetCroppedUvForCapturedObject(out Vector2 uvMin, out Vector2 uvMax, out Vector3 boundsCenter, out Vector2 boundsSize);
 
         // set shader/material data
         this.meltMaterialRuntime.SetTexture(ObjectSnapshotPropId, this.objectSnapshot);
-        this.meltMaterialRuntime.SetVector(WorldCenterPropId, correctedWorldCenter);
-        this.meltMaterialRuntime.SetVector(WorldSizePropId, worldSize);
+        this.meltMaterialRuntime.SetVector(BoundsCenterPropId, boundsCenter);
+        this.meltMaterialRuntime.SetVector(BoundsSizePropId, boundsSize);
         this.meltMaterialRuntime.SetVector(UvMinPropId, uvMin);
         this.meltMaterialRuntime.SetVector(UvMaxPropId, uvMax);
 
@@ -139,37 +139,30 @@ public class MeltFXToggle : MonoBehaviour
     /// <summary>
     /// Calculates needed variables for mapping uv onto billboard quad.
     /// </summary>
-    /// <param name="uvMin"></param>
-    /// <param name="uvMax"></param>
-    /// <param name="correctedWorldCenter"></param>
-    /// <param name="worldSize"></param>
-    private void CalculateUvData(out Vector2 uvMin, out Vector2 uvMax, out Vector3 correctedWorldCenter, out Vector2 worldSize)
+    /// <param name="uvMin">Minimum values for uv bounds, used for uv.x and uv.y</param>
+    /// <param name="uvMax">Maximum values for uv bounds, used for uv.x and uv.y</param>
+    /// <param name="centerOfBoundsInWorldFinal"></param>
+    /// <param name="boundsSize">bounds within screen space, of the captured object</param>
+    private void GetCroppedUvForCapturedObject(out Vector2 uvMin, out Vector2 uvMax, out Vector3 centerOfBoundsInWorldFinal, out Vector2 boundsSize)
     {
-        Bounds localBounds = this.meshFilterComp!.sharedMesh.bounds;
-        Vector3 extents = localBounds.extents;
-        Vector3 center = localBounds.center;
-        Vector3[] corners = {
-            center + new Vector3(-extents.x, -extents.y, -extents.z),
-            center + new Vector3(extents.x, -extents.y, -extents.z),
-            center + new Vector3(-extents.x,  extents.y, -extents.z),
-            center + new Vector3(extents.x,  extents.y, -extents.z),
-            center + new Vector3(-extents.x, -extents.y,  extents.z),
-            center + new Vector3(extents.x, -extents.y,  extents.z),
-            center + new Vector3(-extents.x,  extents.y,  extents.z),
-            center + new Vector3(extents.x,  extents.y,  extents.z)
-        };
-
         Matrix4x4 localToWorld = this.transform.localToWorldMatrix;
-        Vector3 worldCenter = localToWorld.MultiplyPoint(center);
-
+        // prepare camera projection
         Matrix4x4 captureVp = GL.GetGPUProjectionMatrix(captureCam.projectionMatrix, false) * captureCam.worldToCameraMatrix;
         Matrix4x4 captureMvp = captureVp * localToWorld;
+        
+        // bound variables
+        Bounds localBounds = this.meshFilterComp!.sharedMesh.bounds;
+        Vector3[] corners = localBounds.GetCorners();
+        Vector3 center = localBounds.center;
+
+        Vector3 centerOfBoundsInWorld = localToWorld.MultiplyPoint(center);
 
         Vector2 minNDC = new(float.MaxValue, float.MaxValue);
         Vector2 maxNDC = new(float.MinValue, float.MinValue);
 
         for (int i = 0; i < 8; i++)
         {
+            // project corners to clip space, then to Normalized device coordinates (so normalized contained to aspect ratio)
             Vector4 clipPos = captureMvp * new Vector4(corners[i].x, corners[i].y, corners[i].z, 1.0f);
             if (!(clipPos.w > 0.0001f)) continue;
             Vector2 ndc = new(clipPos.x / clipPos.w, clipPos.y / clipPos.w);
@@ -177,37 +170,39 @@ public class MeltFXToggle : MonoBehaviour
             maxNDC = Vector2.Max(maxNDC, ndc);
         }
 
+        // offset so it aligns in uv space
         uvMin = (minNDC * 0.5f) + new Vector2(0.5f, 0.5f);
         uvMax = (maxNDC * 0.5f) + new Vector2(0.5f, 0.5f);
 
+        // calculate offset, to align uv positions according to camera parameters
         Vector2 centerNDC = (minNDC + maxNDC) * 0.5f;
         Vector4 centerClip = captureMvp * new Vector4(center.x, center.y, center.z, 1.0f);
         Vector2 boundsCenterNDC = (centerClip.w > 0.0001f) ? new Vector2(centerClip.x / centerClip.w, centerClip.y / centerClip.w) : centerNDC;
         Vector2 ndcOffset = centerNDC - boundsCenterNDC;
 
-        float z = -captureCam.worldToCameraMatrix.MultiplyPoint(worldCenter).z;
+        float z = -captureCam.worldToCameraMatrix.MultiplyPoint(centerOfBoundsInWorld).z;
         float factorY = captureCam.orthographic ? captureCam.orthographicSize : (z * Mathf.Tan(captureCam.fieldOfView * 0.5f * Mathf.Deg2Rad));
         float factorX = factorY * captureCam.aspect;
 
-        correctedWorldCenter = worldCenter + (ndcOffset.x * factorX) * captureCam.transform.right + (ndcOffset.y * factorY) * captureCam.transform.up;
+        centerOfBoundsInWorldFinal = centerOfBoundsInWorld + (ndcOffset.x * factorX) * captureCam.transform.right + (ndcOffset.y * factorY) * captureCam.transform.up;
 
         float ndcWidth = maxNDC.x - minNDC.x;
         float ndcHeight = maxNDC.y - minNDC.y;
 
-        float worldWidth, worldHeight;
+        float boundsWidth, boundsHeight;
         if (captureCam.orthographic)
         {
             float orthoSize = captureCam.orthographicSize;
-            worldHeight = ndcHeight * orthoSize;
-            worldWidth = ndcWidth * orthoSize * captureCam.aspect;
+            boundsHeight = ndcHeight * orthoSize;
+            boundsWidth = ndcWidth * orthoSize * captureCam.aspect;
         }
         else
         {
             float tanFov = Mathf.Tan(captureCam.fieldOfView * 0.5f * Mathf.Deg2Rad);
-            worldHeight = ndcHeight * z * tanFov;
-            worldWidth = ndcWidth * z * tanFov * captureCam.aspect;
+            boundsHeight = ndcHeight * z * tanFov;
+            boundsWidth = ndcWidth * z * tanFov * captureCam.aspect;
         }
-        worldSize = new Vector2(worldWidth, worldHeight);
+        boundsSize = new Vector2(boundsWidth, boundsHeight);
     }
 
     /// <summary>
