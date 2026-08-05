@@ -29,7 +29,8 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
             struct varyings
             {
                 float4 position_hcs : SV_POSITION;
-                float2 uv : TEXCOORD0;
+                float2 local_uv : TEXCOORD0;
+                float2 screen_uv : TEXCOORD1;
             };
 
             TEXTURE2D(object_snapshot); // snapshot of entire screen, where only the target object is visible
@@ -51,26 +52,29 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                 float3 cam_right = UNITY_MATRIX_V[0].xyz;
                 float3 cam_up = UNITY_MATRIX_V[1].xyz;
 
-                // allign quad position to camera. Warning, shader breaks when mesh isn't a standard quad
+                // align quad position to camera. Warning, shader breaks when mesh isn't a standard quad
                 float3 world_pos = bounds_center + (IN.position_os.x * cam_right * bounds_size.x) + (IN.position_os.y * cam_up * bounds_size.y);
 
                 OUT.position_hcs = TransformWorldToHClip(world_pos); // convert world pos to screen pos
-                OUT.uv = lerp(uv_min, uv_max, IN.uv); // align to cropped bounds of object (passed texture is a screen texture)
+                OUT.screen_uv = lerp(uv_min, uv_max, IN.uv); // align to cropped bounds of object (passed texture is a screen texture)
+                OUT.local_uv = IN.uv;
 
                 return OUT;
             }
 
             half4 frag(varyings IN) : SV_Target
             {
-                if (IN.uv.x < 0.0 || IN.uv.x > 1.0 || IN.uv.y < 0.0 || IN.uv.y > 1.0) // dont render out of bounds
+                if (IN.screen_uv.x < 0.0 || IN.screen_uv.x > 1.0 || IN.screen_uv.y < 0.0 || IN.screen_uv.y > 1.0) // dont render out of bounds
                 {
                     discard;
                 }
                 
-                half4 color = SAMPLE_TEXTURE2D(object_snapshot, sampler_object_snapshot, IN.uv) * base_color;
+                half4 color = SAMPLE_TEXTURE2D(object_snapshot, sampler_object_snapshot, IN.screen_uv) * base_color;
+                // half4 color = SAMPLE_TEXTURE2D(object_snapshot, sampler_object_snapshot, IN.screen_uv); started work here on actual Doom effect, please ignore
                 clip(color.a - 0.01);
                 
                 return color;
+                // return half4(IN.local_uv, 0, color.a); using local uv, split texels up into collumns some how?
             }
             ENDHLSL
         }

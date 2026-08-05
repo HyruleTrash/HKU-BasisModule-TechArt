@@ -89,7 +89,7 @@ public class MeltFXToggle : MonoBehaviour
     private void Start()
     {
         Invoke(nameof(TestToggle), 1f);
-        Invoke(nameof(TestToggleTwo), 5f);
+        // Invoke(nameof(TestToggleTwo), 5f);
     }
 
     private void TestToggle() => SetEffect(true);
