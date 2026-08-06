@@ -122,6 +122,12 @@ Material:
     - _WorkflowMode: 1
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
+    - col_width: 8
+    - noise_amplitude: 0.01
+    - noise_impact: 0.01
+    - wave_amplitude: 0.04
+    - wave_frequency: 20
+    - wave_height: 0.04
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}

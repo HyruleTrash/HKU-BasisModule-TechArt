@@ -4,6 +4,11 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
     {
         [MainColor] base_color("Base Color", Color) = (1, 1, 1, 1)
         [MainTexture] [HideInInspector] object_snapshot("Object Snapshot", 2D) = "white" {}
+        [Space]
+        col_width("Column width (in px)", Float) = 16.0
+        wave_frequency("Wave frequency", Float) = 0.5
+        wave_height("Wave height", Float) = 0.5
+        noise_impact("Noise impact", Float) = 0.5
     }
 
     SubShader
@@ -43,7 +48,21 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                 float2 bounds_size;
                 float2 uv_min;
                 float2 uv_max;
+                float rng_seed;
+                float col_width;
+                float wave_frequency;
+                float wave_height;
+                float noise_impact;
             CBUFFER_END
+            
+            // generates a value between 0 and 1 based on a seed
+            float random_float(float seed)
+            {
+                float rand_hash = 12.9898;
+                float rand_hash2 = 43758.5453;
+                float result = cos(frac(sin(seed * rand_hash)) * rand_hash2);
+                return result;
+            }
 
             varyings vert(attributes IN)
             {
@@ -69,12 +88,33 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                     discard;
                 }
                 
-                half4 color = SAMPLE_TEXTURE2D(object_snapshot, sampler_object_snapshot, IN.screen_uv) * base_color;
-                // half4 color = SAMPLE_TEXTURE2D(object_snapshot, sampler_object_snapshot, IN.screen_uv); started work here on actual Doom effect, please ignore
+                float screen_uv_width = uv_max.x - uv_min.x; // how much width the obj has on the screen, (normalised)
+                float object_pixel_width = screen_uv_width * _ScreenParams.x;
+                
+                // col calc
+                float total_columns = max(1.0, floor(object_pixel_width / col_width));
+                int col_index = (int)floor(IN.local_uv.x * total_columns);
+                float normalized_col_x = (float)col_index / total_columns;
+                
+                // wave calc
+                float wave_offset;
+                if (random_float(rng_seed) > 0.5)
+                    wave_offset = sin((normalized_col_x * wave_frequency) + rng_seed) * wave_height;
+                else
+                    wave_offset = cos((normalized_col_x * wave_frequency) + rng_seed) * wave_height;
+                
+                // extra noise
+                float col_noise_offset = (random_float(rng_seed + (float)col_index) - 0.5) * 2.0 * noise_impact;
+                
+                // final offset
+                float final_offset = wave_offset + col_noise_offset;
+                float2 final_uv = IN.screen_uv + float2(0.0, final_offset);
+                
+                // color
+                half4 color = SAMPLE_TEXTURE2D(object_snapshot, sampler_object_snapshot, final_uv);
                 clip(color.a - 0.01);
                 
-                return color;
-                // return half4(IN.local_uv, 0, color.a); using local uv, split texels up into collumns some how?
+                return color; //* base_color;
             }
             ENDHLSL
         }

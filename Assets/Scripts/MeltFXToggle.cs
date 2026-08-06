@@ -15,6 +15,7 @@ public class MeltFXToggle : MonoBehaviour
     private static readonly int BoundsSizePropId = Shader.PropertyToID("bounds_size");
     private static readonly int UvMinPropId = Shader.PropertyToID("uv_min");
     private static readonly int UvMaxPropId = Shader.PropertyToID("uv_max");
+    private static readonly int RngSeedPropId = Shader.PropertyToID("rng_seed");
     
     // required components
     [SerializeField, HideInInspector]
@@ -130,6 +131,7 @@ public class MeltFXToggle : MonoBehaviour
         this.meltMaterialRuntime.SetVector(BoundsSizePropId, boundsSize);
         this.meltMaterialRuntime.SetVector(UvMinPropId, uvMin);
         this.meltMaterialRuntime.SetVector(UvMaxPropId, uvMax);
+        this.meltMaterialRuntime.SetFloat(RngSeedPropId, Mathf.PerlinNoise(this.gameObject.GetInstanceID() * 0.12345f, 0f));
 
         List<Material> a = new() { this.meltMaterialRuntime };
         this.rendererComp.SetMaterials(a);
