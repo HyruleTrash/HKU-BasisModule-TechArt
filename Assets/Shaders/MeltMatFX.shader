@@ -9,6 +9,8 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
         wave_frequency("Wave frequency", Float) = 0.5
         wave_height("Wave height", Float) = 0.5
         noise_impact("Noise impact", Float) = 0.5
+        [Space]
+        speed("Speed", Float) = 0.5
     }
 
     SubShader
@@ -53,6 +55,7 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                 float wave_frequency;
                 float wave_height;
                 float noise_impact;
+                float speed;
             CBUFFER_END
             
             // generates a value between 0 and 1 based on a seed
@@ -91,7 +94,7 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                 float screen_uv_width = uv_max.x - uv_min.x; // how much width the obj has on the screen, (normalised)
                 float object_pixel_width = screen_uv_width * _ScreenParams.x;
                 
-                // col calc
+                // column calc
                 float total_columns = max(1.0, floor(object_pixel_width / col_width));
                 int col_index = (int)floor(IN.local_uv.x * total_columns);
                 float normalized_col_x = (float)col_index / total_columns;
@@ -107,7 +110,19 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                 float col_noise_offset = (random_float(rng_seed + (float)col_index) - 0.5) * 2.0 * noise_impact;
                 
                 // final offset
+                float time_offset = _Time * speed;
                 float final_offset = wave_offset + col_noise_offset;
+                
+                // bring offsets from -1 and 1 space, into -1 space. to align with time animation
+                final_offset -= wave_height;
+                
+                // only start applying melt offset, if enough time has passed
+                if (final_offset < -time_offset)
+                {
+                    final_offset = -time_offset;
+                }
+                final_offset += time_offset;
+                
                 float2 final_uv = IN.screen_uv + float2(0.0, final_offset);
                 
                 // color

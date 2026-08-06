@@ -27,6 +27,8 @@ public class MeltFXToggle : MonoBehaviour
     // melt FX runtime data
     private Material meltMaterialRuntime;
     private RenderTexture objectSnapshot;
+    private bool state;
+
     #endregion
 
     // shader data
@@ -85,15 +87,6 @@ public class MeltFXToggle : MonoBehaviour
 
         InitializeCaptureCam();
     }
-    
-    private void Start()
-    {
-        Invoke(nameof(TestToggle), 1f);
-        // Invoke(nameof(TestToggleTwo), 5f);
-    }
-
-    private void TestToggle() => SetEffect(true);
-    private void TestToggleTwo() => SetEffect(false);
 
     private void RegisterOriginalMaterials(bool onlyIfUnRegistered = false)
     {
@@ -103,15 +96,22 @@ public class MeltFXToggle : MonoBehaviour
             this.originalMaterials = new List<Material>();
         this.rendererComp.GetSharedMaterials(this.originalMaterials);
     }
+    
+    /// <summary>
+    /// Toggles the melt effect state, switching from one to the other, depending on current state
+    /// </summary>
+    public void ToggleState() => SetEffect(!this.state);
 
     /// <summary>
     /// Sets the melt effect state
     /// </summary>
     /// <param name="state">true == melt effect, false == original visual</param>
-    private void SetEffect(bool state)
+    public void SetEffect(bool state)
     {
         if (!this.meltMaterial || !this.rendererComp || this.originalMaterials.Count == 0) 
             return;
+        
+        this.state = state;
 
         if (state) 
             TriggerMelt();
