@@ -7,22 +7,13 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class MeltFXToggle : MonoBehaviour
 {
-    // shader data
-    private const string MeltShaderName = "Custom/MeltMatFX";
-    private static Shader meltShader;
-    private static readonly int ObjectSnapshotPropId = Shader.PropertyToID("object_snapshot");
-    private static readonly int BoundsCenterPropId = Shader.PropertyToID("bounds_center");
-    private static readonly int BoundsSizePropId = Shader.PropertyToID("bounds_size");
-    private static readonly int UvMinPropId = Shader.PropertyToID("uv_min");
-    private static readonly int UvMaxPropId = Shader.PropertyToID("uv_max");
-    private static readonly int RngSeedPropId = Shader.PropertyToID("rng_seed");
-    
-    // required components
+    // required components, (hidden)
     [SerializeField, HideInInspector]
     private MeshRenderer rendererComp;
     [SerializeField, HideInInspector]
     private MeshFilter meshFilterComp;
     
+    #region Serialized Fields
     // melt material
     [SerializeField] private Material meltMaterial;
     [SerializeField] private int isolationLayer = 31;
@@ -32,12 +23,23 @@ public class MeltFXToggle : MonoBehaviour
     private List<Material> originalMaterials = new();
     [SerializeField, HideInInspector]
     private Mesh originalMesh;
-
+    
     // melt FX runtime data
     private Material meltMaterialRuntime;
     private RenderTexture objectSnapshot;
+    #endregion
 
-    // reusable data
+    // shader data
+    private const string MeltShaderName = "Custom/MeltMatFX";
+    private static Shader meltShader;
+    private static readonly int ObjectSnapshotPropId = Shader.PropertyToID("object_snapshot");
+    private static readonly int BoundsCenterPropId = Shader.PropertyToID("bounds_center");
+    private static readonly int BoundsSizePropId = Shader.PropertyToID("bounds_size");
+    private static readonly int UvMinPropId = Shader.PropertyToID("uv_min");
+    private static readonly int UvMaxPropId = Shader.PropertyToID("uv_max");
+    private static readonly int RngSeedPropId = Shader.PropertyToID("rng_seed");
+
+    // reused data
     private static Mesh quadMesh;
     private static GameObject captureCamObj;
     private static Camera captureCam;
@@ -56,26 +58,23 @@ public class MeltFXToggle : MonoBehaviour
         if (!this.rendererComp) this.rendererComp = GetComponent<MeshRenderer>();
         if (!this.meshFilterComp) this.meshFilterComp = GetComponent<MeshFilter>();
 
-        if (this.rendererComp)
-        {
-            this.originalMaterials ??= new List<Material>();
-            this.rendererComp.GetSharedMaterials(this.originalMaterials);
-        }
+        if (this.rendererComp) 
+            RegisterOriginalMaterials(true);
         
-        if (this.meshFilterComp) this.originalMesh ??= this.meshFilterComp.sharedMesh;
+        if (this.meshFilterComp) 
+            this.originalMesh ??= this.meshFilterComp.sharedMesh;
         
-        if (this.meltMaterial && this.meltMaterial.shader != meltShader) this.meltMaterial = null;
+        if (this.meltMaterial && this.meltMaterial.shader != meltShader) 
+            this.meltMaterial = null;
     }
 
     private void Awake()
     {
         if (this.rendererComp && (this.originalMaterials == null || this.originalMaterials.Count == 0))
-        {
-            this.originalMaterials = new List<Material>();
-            this.rendererComp.GetSharedMaterials(this.originalMaterials);
-        }
+            RegisterOriginalMaterials();
 
-        if (this.meshFilterComp && !this.originalMesh) this.originalMesh = this.meshFilterComp.sharedMesh;
+        if (this.meshFilterComp && !this.originalMesh) 
+            this.originalMesh = this.meshFilterComp.sharedMesh;
         
         if (!quadMesh)
         {
@@ -84,7 +83,7 @@ public class MeltFXToggle : MonoBehaviour
             Destroy(tempQuad);
         }
 
-        InitCaptureCam();
+        InitializeCaptureCam();
     }
     
     private void Start()
@@ -96,16 +95,28 @@ public class MeltFXToggle : MonoBehaviour
     private void TestToggle() => SetEffect(true);
     private void TestToggleTwo() => SetEffect(false);
 
+    private void RegisterOriginalMaterials(bool onlyIfUnRegistered = false)
+    {
+        if (onlyIfUnRegistered)
+            this.originalMaterials ??= new List<Material>();
+        else
+            this.originalMaterials = new List<Material>();
+        this.rendererComp.GetSharedMaterials(this.originalMaterials);
+    }
+
     /// <summary>
     /// Sets the melt effect state
     /// </summary>
     /// <param name="state">true == melt effect, false == original visual</param>
     private void SetEffect(bool state)
     {
-        if (!this.meltMaterial || !this.rendererComp || this.originalMaterials.Count == 0) return;
+        if (!this.meltMaterial || !this.rendererComp || this.originalMaterials.Count == 0) 
+            return;
 
-        if (state) TriggerMelt();
-        else ResetToOriginalVisuals();
+        if (state) 
+            TriggerMelt();
+        else 
+            ResetToOriginalVisuals();
     }
 
     private void ResetToOriginalVisuals()
@@ -162,6 +173,7 @@ public class MeltFXToggle : MonoBehaviour
         Vector2 minNDC = new(float.MaxValue, float.MaxValue);
         Vector2 maxNDC = new(float.MinValue, float.MinValue);
 
+        // calculate the 2d bounds that the target object exists within the screen. using the object's 3d bounding box
         for (int i = 0; i < 8; i++)
         {
             // project corners to clip space, then to Normalized device coordinates (so normalized contained to aspect ratio)
@@ -172,11 +184,12 @@ public class MeltFXToggle : MonoBehaviour
             maxNDC = Vector2.Max(maxNDC, ndc);
         }
 
-        // offset so it aligns in uv space
+        // offset values from 0 to 1, so it aligns in uv space
         uvMin = (minNDC * 0.5f) + new Vector2(0.5f, 0.5f);
         uvMax = (maxNDC * 0.5f) + new Vector2(0.5f, 0.5f);
 
-        // calculate offset, to align uv positions according to camera parameters
+        // calculate offset, to align uv positions, according to camera parameters
+        // these camera parameters impact the original object's position on screen
         Vector2 centerNDC = (minNDC + maxNDC) * 0.5f;
         Vector4 centerClip = captureMvp * new Vector4(center.x, center.y, center.z, 1.0f);
         Vector2 boundsCenterNDC = (centerClip.w > 0.0001f) ? new Vector2(centerClip.x / centerClip.w, centerClip.y / centerClip.w) : centerNDC;
@@ -188,6 +201,7 @@ public class MeltFXToggle : MonoBehaviour
 
         centerOfBoundsInWorldFinal = centerOfBoundsInWorld + (ndcOffset.x * factorX) * captureCam.transform.right + (ndcOffset.y * factorY) * captureCam.transform.up;
 
+        // calculate the width and height of the 2d bounds the object takes up on screen
         float ndcWidth = maxNDC.x - minNDC.x;
         float ndcHeight = maxNDC.y - minNDC.y;
 
@@ -214,13 +228,15 @@ public class MeltFXToggle : MonoBehaviour
     {
         Camera mainCam = Camera.main;
         if (!mainCam) return;
-        InitCaptureCam();
+        InitializeCaptureCam();
+        
         captureCamObj.SetActive(true);
 
         // Init RenderTexture
         if (!this.objectSnapshot || this.objectSnapshot.width != Screen.width || this.objectSnapshot.height != Screen.height)
         {
-            if (this.objectSnapshot) this.objectSnapshot.Release();
+            if (this.objectSnapshot) 
+                this.objectSnapshot.Release();
             this.objectSnapshot = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
             this.objectSnapshot.Create();
         }
@@ -230,6 +246,7 @@ public class MeltFXToggle : MonoBehaviour
         captureCam.clearFlags = CameraClearFlags.SolidColor;
         captureCam.backgroundColor = new Color(0, 0, 0, 0);
 
+        // register old layer, and move to isolated layer so that only targeted object shows in snapshot
         int originalLayer = this.rendererComp.gameObject.layer;
         this.rendererComp.gameObject.layer = this.isolationLayer;
         captureCam.cullingMask = 1 << this.isolationLayer; // only render the isolation layer
@@ -240,7 +257,10 @@ public class MeltFXToggle : MonoBehaviour
         this.rendererComp.gameObject.layer = originalLayer;
     }
     
-    private static void InitCaptureCam()
+    /// <summary>
+    /// Creates a gameObject with camera, for taking screen snapshots
+    /// </summary>
+    private static void InitializeCaptureCam()
     {
         if (captureCamObj) return;
         captureCamObj = new GameObject("TempCaptureCam");

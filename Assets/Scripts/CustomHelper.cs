@@ -3,7 +3,8 @@
 public static class CustomHelper
 {
     /// <summary>
-    /// Creates an array of local vector positions, that are the corners of the bounds
+    /// Creates an array of local vector positions, these are the corners of the bounds
+    /// Calculated by its size/extends
     /// </summary>
     public static Vector3[] GetCorners(this Bounds bounds)
     {
