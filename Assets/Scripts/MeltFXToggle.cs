@@ -130,10 +130,12 @@ public class MeltFXToggle : MonoBehaviour
     /// </summary>
     private void TriggerMelt()
     {
-        CreateSnapshotOfRender();
+        // Sets current render texture to screenshot of entire screen
+        CreateSnapshotOfObjectRender();
             
         if (!this.meltMaterialRuntime) this.meltMaterialRuntime = new Material(this.meltMaterial);
 
+        // calculates needed data to crop empty space out, and only use space where the object actually is (2d bounds on screen)
         GetCroppedUvForCapturedObject(out Vector2 uvMin, out Vector2 uvMax, out Vector3 boundsCenter, out Vector2 boundsSize);
 
         // set shader/material data
@@ -224,7 +226,7 @@ public class MeltFXToggle : MonoBehaviour
     /// <summary>
     /// using a camera copy, that only renders the current render, sets the render texture to the camera output
     /// </summary>
-    private void CreateSnapshotOfRender()
+    private void CreateSnapshotOfObjectRender()
     {
         Camera mainCam = Camera.main;
         if (!mainCam) return;
