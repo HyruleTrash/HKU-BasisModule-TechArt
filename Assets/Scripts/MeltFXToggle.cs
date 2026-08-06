@@ -40,6 +40,7 @@ public class MeltFXToggle : MonoBehaviour
     private static readonly int UvMinPropId = Shader.PropertyToID("uv_min");
     private static readonly int UvMaxPropId = Shader.PropertyToID("uv_max");
     private static readonly int RngSeedPropId = Shader.PropertyToID("rng_seed");
+    private static readonly int StartTimePropId = Shader.PropertyToID("start_time");
 
     // reused data
     private static Mesh quadMesh;
@@ -101,19 +102,24 @@ public class MeltFXToggle : MonoBehaviour
     /// Toggles the melt effect state, switching from one to the other, depending on current state
     /// </summary>
     public void ToggleState() => SetEffect(!this.state);
+    
+    /// <summary>
+    /// Calls toggle state with a delay
+    /// </summary>
+    public void DelayedToggleState(float waitTime) => Invoke(nameof(ToggleState), waitTime);
 
     /// <summary>
     /// Sets the melt effect state
     /// </summary>
-    /// <param name="state">true == melt effect, false == original visual</param>
-    public void SetEffect(bool state)
+    /// <param name="newState">true == melt effect, false == original visual</param>
+    public void SetEffect(bool newState)
     {
         if (!this.meltMaterial || !this.rendererComp || this.originalMaterials.Count == 0) 
             return;
         
-        this.state = state;
+        this.state = newState;
 
-        if (state) 
+        if (newState) 
             TriggerMelt();
         else 
             ResetToOriginalVisuals();
@@ -145,6 +151,7 @@ public class MeltFXToggle : MonoBehaviour
         this.meltMaterialRuntime.SetVector(UvMinPropId, uvMin);
         this.meltMaterialRuntime.SetVector(UvMaxPropId, uvMax);
         this.meltMaterialRuntime.SetFloat(RngSeedPropId, Mathf.PerlinNoise(this.gameObject.GetInstanceID() * 0.12345f, 0f));
+        this.meltMaterialRuntime.SetFloat(StartTimePropId, Time.time);
 
         List<Material> a = new() { this.meltMaterialRuntime };
         this.rendererComp.SetMaterials(a);

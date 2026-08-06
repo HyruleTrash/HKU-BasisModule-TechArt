@@ -56,6 +56,7 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                 float wave_height;
                 float noise_impact;
                 float speed;
+                float start_time;
             CBUFFER_END
             
             // generates a value between 0 and 1 based on a seed
@@ -110,7 +111,8 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                 float col_noise_offset = (random_float(rng_seed + (float)col_index) - 0.5) * 2.0 * noise_impact;
                 
                 // final offset
-                float time_offset = _Time * speed;
+                float elapsed_time = _Time.y - start_time;
+                float time_offset = elapsed_time * speed;
                 float final_offset = wave_offset + col_noise_offset;
                 
                 // bring offsets from -1 and 1 space, into -1 space. to align with time animation
