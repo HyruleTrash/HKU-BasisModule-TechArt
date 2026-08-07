@@ -42,6 +42,8 @@ public class MeltFXToggle : MonoBehaviour
     private static readonly int UvMaxPropId = Shader.PropertyToID("uv_max");
     private static readonly int RngSeedPropId = Shader.PropertyToID("rng_seed");
     private static readonly int StartTimePropId = Shader.PropertyToID("start_time");
+    private static readonly int BlurPassAmountPropId = Shader.PropertyToID("blur_pass_amount");
+    private static readonly int BlurStepPropId = Shader.PropertyToID("blur_step");
 
     // reused data
     private static Mesh quadMesh;
@@ -264,14 +266,14 @@ public class MeltFXToggle : MonoBehaviour
         
         captureCam.Render();
         
-        yield return new WaitForEndOfFrame();
+        yield return new WaitForEndOfFrame(); // extra yield to make sure frame is finished rendering
         captureCamObj.SetActive(false);
         captureCam.enabled = false;
         
         this.rendererComp.gameObject.layer = originalLayer;
         
         // use render, and blur it
-        this.objectSnapshot = this.objectSnapshot.Blur();
+        this.objectSnapshot = this.objectSnapshot.Blur(this.meltMaterial.GetInt(BlurPassAmountPropId), this.meltMaterial.GetFloat(BlurStepPropId));
     }
     
     /// <summary>

@@ -134,6 +134,8 @@ Material:
     - _WorkflowMode: 1
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
+    - blur_pass_amount: 5
+    - blur_step: 0.1
     - col_width: 8
     - distort_threshold: 0.3
     - flesh_threshold: 1

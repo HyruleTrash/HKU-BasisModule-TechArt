@@ -2,21 +2,28 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
 {
     Properties
     {
+        [Header(Lookup tables or gradients)]
         [NoScaleOffset] flesh_lookup("Flesh lookup colors (Texture2D)", 2D) = "white" {}
         [NoScaleOffset] mix_lookup("lookup colors (Texture2D). for general mixing", 2D) = "white" {}
-        flesh_threshold("Flesh color threshold, applied after distortion", Float) = 1
-        [MainTexture] [HideInInspector] object_snapshot("Object Snapshot", 2D) = "white" {}
         [Space]
+        [Header(Wave data)]
         pixel_size("Pixel size (size of each row and column)", Float) = 16.0
         wave_frequency("Wave frequency", Float) = 0.5
         wave_height("Wave height", Float) = 0.5
         noise_impact("Noise impact", Float) = 0.5
-        stretch_impact("Stretch impact", Float) = 0.5
         [Space]
+        [Header(Downwards movement data)]
+        stretch_impact("Stretch impact", Float) = 0.5
         speed("Speed", Float) = 0.5
         speed_noise_impact("Speed noise, impact", Float) = 0.5
         [space]
-        [Range(0, 1)] distort_threshold("Distortion threshold", Float) = 0.5
+        [Header(Distortion data)]
+        distort_threshold("Distortion threshold", Range(0.0, 1.0)) = 0.5
+        flesh_threshold("Flesh color threshold, applied after distortion", Float) = 1
+        [space]
+        [Header(Blur)]
+        blur_pass_amount("blur pass amount", Range(0, 8)) = 3
+        blur_step("blur step size", Float) = 0.1
     }
 
     SubShader
