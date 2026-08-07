@@ -3,6 +3,7 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
     Properties
     {
         [NoScaleOffset] flesh_lookup("Flesh lookup colors (Texture2D)", 2D) = "white" {}
+        [NoScaleOffset] mix_lookup("lookup colors (Texture2D). for general mixing", 2D) = "white" {}
         flesh_threshold("Flesh color threshold, applied after distortion", Float) = 1
         [MainTexture] [HideInInspector] object_snapshot("Object Snapshot", 2D) = "white" {}
         [Space]
@@ -51,6 +52,9 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
             
             TEXTURE2D(flesh_lookup);
             SAMPLER(sampler_flesh_lookup);
+            
+            TEXTURE2D(mix_lookup);
+            SAMPLER(sampler_mix_lookup);
 
             CBUFFER_START(UnityPerMaterial)
                 float4 object_snapshot_ST;
@@ -117,6 +121,7 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                 // row calc
                 float total_rows = max(1.0, floor(object_pixel_height / pixel_size));
                 int row_index = (int)floor(IN.local_uv.y * total_rows);
+                float row_noise = random_float(rng_seed + (float)row_index);
                 
                 // column calc
                 float total_columns = max(1.0, floor(object_pixel_width / pixel_size));
@@ -124,15 +129,15 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                 float normalized_col_x = (float)col_index / total_columns;
                 float col_noise = random_float(rng_seed + (float)col_index);
                 
+                float tex_noise = random_float(rng_seed + (float)col_index + (float)row_index); // noise per texel? large pixel.
+                
                 // wave calc
                 float wave_offset;
                 if (random_float(rng_seed) > 0.5)
                     wave_offset = sin((normalized_col_x * wave_frequency) + rng_seed) * wave_height;
                 else
                     wave_offset = cos((normalized_col_x * wave_frequency) + rng_seed) * wave_height;
-                
-                // extra noise
-                float col_noise_offset = (col_noise - 0.5) * 2.0 * noise_impact;
+                float col_noise_offset = (col_noise - 0.5) * 2.0 * noise_impact; // noise for the wave
                 
                 // final offset
                 float speed_noise = (random_float(rng_seed + (float)col_index + 23.4694) + 1) * speed_noise_impact; // add seamingly random number to seed, then bring into positive space
@@ -164,18 +169,21 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                 if (effect_progress > used_distort_threshold && normalized_row_y < used_distort_threshold && color.a != 0)
                 {
                     float distortion_strength = 0.05; // percentage of uv
-                    float2 neighbor_offset = float2(col_noise, random_float(rng_seed + (float)row_index)) * distortion_strength;
+                    float2 neighbor_offset = float2(col_noise, row_noise) * distortion_strength;
                     
                     half4 neighbor_color = SAMPLE_TEXTURE2D(object_snapshot, sampler_object_snapshot, final_uv + neighbor_offset);
                     clip(neighbor_color.a - 0.01);
                     
-                    half4 random_flesh_color = SAMPLE_TEXTURE2D(flesh_lookup, sampler_flesh_lookup, float2(random_float(rng_seed + (float)row_index + (float)col_index), 0.5));
+                    half4 random_flesh_color = SAMPLE_TEXTURE2D(flesh_lookup, sampler_flesh_lookup, float2(tex_noise, 0.5));
                     
                     neighbor_color.rgb = lerp(neighbor_color.rgb, random_flesh_color, effect_progress + flesh_threshold);
                     return neighbor_color;
                 }
                 
-                return color;
+                float true_pixel_noise = random_float(rng_seed + IN.local_uv.x + IN.local_uv.y);
+                half4 random_mix_color = SAMPLE_TEXTURE2D(mix_lookup, sampler_mix_lookup, float2(min(true_pixel_noise - tex_noise, 0), 0.5));
+                random_mix_color = lerp(color, random_mix_color, true_pixel_noise);
+                return color * random_mix_color;
             }
             ENDHLSL
         }
