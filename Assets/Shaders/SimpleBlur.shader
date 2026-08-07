@@ -1,13 +1,13 @@
-﻿Shader "Hidden/SimpleBlur"
+﻿Shader "Hidden/SimpleBlur" // A shader that creates a simple blur effect using neighbors
 {
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        _MainTex ("Texture", 2D) = "white" {} // I dont like it but needs to use property to expose to blit, uses other syntax to expose to blit
         _Offset ("Offset", Vector) = (0,0,0,0)
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" "RenderPipeline" = "UniversalPipeline" }
+        Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" }
         Cull Off ZWrite Off ZTest Always
 
         Pass
