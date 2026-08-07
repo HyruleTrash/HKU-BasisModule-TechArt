@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -120,7 +121,7 @@ public class MeltFXToggle : MonoBehaviour
         this.state = newState;
 
         if (newState) 
-            TriggerMelt();
+            StartCoroutine(TriggerMelt());
         else 
             ResetToOriginalVisuals();
     }
@@ -134,10 +135,10 @@ public class MeltFXToggle : MonoBehaviour
     /// <summary>
     /// Sets the melt materials and calls calculation of needed variables
     /// </summary>
-    private void TriggerMelt()
+    private IEnumerator TriggerMelt()
     {
         // Sets current render texture to screenshot of entire screen
-        CreateSnapshotOfObjectRender();
+        yield return CreateSnapshotOfObjectRender();
             
         if (!this.meltMaterialRuntime) this.meltMaterialRuntime = new Material(this.meltMaterial);
 
@@ -233,15 +234,13 @@ public class MeltFXToggle : MonoBehaviour
     /// <summary>
     /// using a camera copy, that only renders the current render, sets the render texture to the camera output
     /// </summary>
-    private void CreateSnapshotOfObjectRender()
+    private IEnumerator CreateSnapshotOfObjectRender()
     {
         Camera mainCam = Camera.main;
-        if (!mainCam) return;
+        if (!mainCam) yield break;
         InitializeCaptureCam();
-        
-        captureCamObj.SetActive(true);
 
-        // Init RenderTexture
+        // init RenderTexture
         if (!this.objectSnapshot || this.objectSnapshot.width != Screen.width || this.objectSnapshot.height != Screen.height)
         {
             if (this.objectSnapshot) 
@@ -260,10 +259,19 @@ public class MeltFXToggle : MonoBehaviour
         this.rendererComp.gameObject.layer = this.isolationLayer;
         captureCam.cullingMask = 1 << this.isolationLayer; // only render the isolation layer
 
+        captureCamObj.SetActive(true);
+        captureCam.enabled = true;
+        
         captureCam.Render();
+        
+        yield return new WaitForEndOfFrame();
         captureCamObj.SetActive(false);
+        captureCam.enabled = false;
         
         this.rendererComp.gameObject.layer = originalLayer;
+        
+        // use render, and blur it
+        this.objectSnapshot = this.objectSnapshot.Blur();
     }
     
     /// <summary>
