@@ -126,6 +126,7 @@ Material:
     - noise_amplitude: 0.01
     - noise_impact: 0.01
     - speed: 0.2
+    - speed_noise_impact: 2
     - stretch_impact: 2
     - wave_amplitude: 0.04
     - wave_frequency: 20
