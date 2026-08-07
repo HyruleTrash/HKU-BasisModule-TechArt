@@ -2,7 +2,8 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
 {
     Properties
     {
-        [MainColor] base_color("Base Color", Color) = (1, 1, 1, 1)
+        [NoScaleOffset] flesh_lookup("Flesh lookup colors (Texture2D)", 2D) = "white" {}
+        flesh_threshold("Flesh color threshold, applied after distortion", Float) = 1
         [MainTexture] [HideInInspector] object_snapshot("Object Snapshot", 2D) = "white" {}
         [Space]
         pixel_size("Pixel size (size of each row and column)", Float) = 16.0
@@ -47,9 +48,11 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
 
             TEXTURE2D(object_snapshot); // snapshot of entire screen, where only the target object is visible
             SAMPLER(sampler_object_snapshot);
+            
+            TEXTURE2D(flesh_lookup);
+            SAMPLER(sampler_flesh_lookup);
 
             CBUFFER_START(UnityPerMaterial)
-                half4 base_color;
                 float4 object_snapshot_ST;
                 float3 bounds_center;
                 float2 bounds_size;
@@ -65,6 +68,7 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                 float speed_noise_impact;
                 float start_time;
                 float distort_threshold;
+                float flesh_threshold;
             CBUFFER_END
             
             // generates a value between 0 and 1 based on a seed
@@ -165,6 +169,9 @@ Shader "Custom/MeltMatFX" // A shader for triggering a DOOM melt effect
                     half4 neighbor_color = SAMPLE_TEXTURE2D(object_snapshot, sampler_object_snapshot, final_uv + neighbor_offset);
                     clip(neighbor_color.a - 0.01);
                     
+                    half4 random_flesh_color = SAMPLE_TEXTURE2D(flesh_lookup, sampler_flesh_lookup, float2(random_float(rng_seed + (float)row_index + (float)col_index), 0.5));
+                    
+                    neighbor_color.rgb = lerp(neighbor_color.rgb, random_flesh_color, effect_progress + flesh_threshold);
                     return neighbor_color;
                 }
                 

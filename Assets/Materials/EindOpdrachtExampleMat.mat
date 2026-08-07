@@ -72,6 +72,14 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - flesh_lookup:
+        m_Texture: {fileID: 2800000, guid: 09a70331caa386a448bd92655b358989, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - gradient_tex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - object_snapshot:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -124,6 +132,7 @@ Material:
     - _ZWrite: 1
     - col_width: 8
     - distort_threshold: 0.3
+    - flesh_threshold: 1
     - noise_amplitude: 0.01
     - noise_impact: 0.01
     - pixel_size: 16
@@ -141,6 +150,7 @@ Material:
     - base_color: {r: 0, g: 0.66784525, b: 1, a: 1}
     - bounds_center: {r: 0, g: 0, b: 0, a: 0}
     - bounds_extents: {r: 0.5, g: 0.5, b: 0.5, a: 0}
+    - flesh_color: {r: 0.19999996, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &480478491825809779
